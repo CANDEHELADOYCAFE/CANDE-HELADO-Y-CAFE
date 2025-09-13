@@ -11,9 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<!-- Font Awesome CDN -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
- 
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
         * {
@@ -355,7 +354,7 @@
         }
 
 
-   .producto {
+        .producto {
             /* background: white; */
             border-radius: 10px;
             overflow: hidden;
@@ -366,16 +365,16 @@
             flex-direction: column;
             height: 100%;
         }
-        
+
         .producto:hover {
             transform: translateY(-5px);
         }
-        
+
         .producto-imagen {
             height: 200px;
             overflow: hidden;
         }
-        
+
         .producto-imagen img {
             width: 100%;
             height: 100%;
@@ -384,11 +383,11 @@
             border-bottom-right-radius: 10px;
             border-bottom-left-radius: 10px;
         }
-        
+
         .producto:hover .producto-imagen img {
             transform: scale(1.05);
         }
-        
+
         .producto-contenido {
             padding: 10px;
             flex-grow: 1;
@@ -397,7 +396,7 @@
             font-size: 12px;
             justify-content: left;
         }
-        
+
         .producto-nombre {
             font-size: 15px;
             font-weight: 600;
@@ -405,7 +404,7 @@
             margin-bottom: 0rem;
             font-weight: bold;
         }
-        
+
         .producto-tipo {
             display: inline-block;
             background: #f1f2f6;
@@ -416,13 +415,13 @@
             margin-bottom: 0.8rem;
             align-self: flex-start;
         }
-        
+
         .producto-descripcion {
             color: #7f8c8d;
             margin-bottom: 5px;
             line-height: 1.5;
             flex-grow: 1;
-            
+
             /* Estilos para acortar texto con puntos suspensivos */
             display: -webkit-box;
             -webkit-line-clamp: 3;
@@ -430,23 +429,23 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .producto-precio {
             font-size: 1.3rem;
             font-weight: 700;
             color: #2c3e50;
             margin-top: auto;
         }
-        
+
         .producto-inactivo {
             opacity: 0.7;
             cursor: not-allowed;
         }
-        
+
         .producto-inactivo .producto-imagen {
             filter: grayscale(70%);
         }
-        
+
         .sin-productos {
             text-align: center;
             padding: 60px 30px;
@@ -455,19 +454,19 @@
             border: 2px dashed #ddd;
             margin: 20px 0;
         }
-        
+
         .sin-productos i {
             font-size: 4rem;
             color: #bdc3c7;
             margin-bottom: 20px;
         }
-        
+
         .sin-productos p {
             font-size: 1.2rem;
             color: #7f8c8d;
         }
-        
-      
+
+
 
         /* EVENTOS */
         .evento-card {
@@ -661,173 +660,187 @@
 
 
         /* ---------------------------------------------------------------------------------------- */
-       .modal-backdrop {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
 
-.modal-content-producto {
-  background: #fff;
-  border-radius: 10px;
-  max-width: 800px;
-  width: 95%;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  position: relative;
-}
+        .modal-content-producto {
+            background: #fff;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 24px;
-}
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-}
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+        }
 
-.modal-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-top: 15px;
-}
+        .modal-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+        }
 
-.galeria-container {
-  flex: 1;
-  min-width: 250px;
-  text-align: center;
-  position: relative;
-}
+        .galeria-container {
+            flex: 1;
+            min-width: 250px;
+            text-align: center;
+            position: relative;
+        }
 
-.galeria-img {
-  width: 100%;
-  max-height: 300px;
-  object-fit: contain;
-  display: none;
-  transition: opacity 0.3s;
-}
+        .galeria-img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            display: none;
+            transition: opacity 0.3s;
+        }
 
-.galeria-img.active {
-  display: block;
-}
+        .galeria-img.active {
+            display: block;
+        }
 
-.galeria-nav {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-  gap: 5px;
-}
+        .galeria-nav {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 5px;
+        }
 
-.galeria-dot {
-  width: 12px;
-  height: 12px;
-  background: #aaa;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+        .galeria-dot {
+            width: 12px;
+            height: 12px;
+            background: #aaa;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
 
-.galeria-dot.active {
-  background: #333;
-}
+        .galeria-dot.active {
+            background: #333;
+        }
 
-.producto-detalle {
-  flex: 1;
-  min-width: 250px;
-}
+        .producto-detalle {
+            flex: 1;
+            min-width: 250px;
+        }
 
-.producto-descripcion {
-  margin-bottom: 0px;
-  color: #969494;
-}
+        .producto-descripcion {
+            margin-bottom: 0px;
+            color: #969494;
+        }
 
-.producto-precio {
-  font-size: 18px;
-  margin-bottom: 15px;
-  color: #222;
-}
+        .producto-precio {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #222;
+        }
 
-.producto-variantes {
-  margin-top: 10px;
-}
+        .producto-variantes {
+            margin-top: 10px;
+        }
 
-.producto-variantes h4 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  color: #444;
-}
+        .producto-variantes h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #444;
+        }
 
-.variante-item {
-  border: 1px solid #eee;
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  background: #f9f9f9;
-}
-
-
-
-
+        .variante-item {
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
 
 
 
 
-.share-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      margin: 5px;
-    }
-    .share-instagram {
-      background: #E1306C;
-    }
-    .share-instagram i {
-      color: white;
-      font-size: 20px;
-    }
 
 
 
 
-    .sin-eventos {
-  text-align: center;
-  margin-top: 50px;
-  color: #666;
-}
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin: 5px;
+        }
 
-.sin-eventos i {
-  font-size: 60px;
-  color: var(--color-principal);
-  animation: pulse 1.5s infinite;
-}
+        .share-instagram {
+            background: #E1306C;
+        }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
-}
+        .share-instagram i {
+            color: white;
+            font-size: 20px;
+        }
 
+
+
+
+        .sin-eventos {
+            text-align: center;
+            margin-top: 50px;
+            color: #666;
+        }
+
+        .sin-eventos i {
+            font-size: 60px;
+            color: var(--color-principal);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -844,19 +857,6 @@
     ">
         <i class="fas fa-bars" id="menuIcon" style="transition: transform 0.3s ease"></i>
     </button>
-
-    <script>
-    function toggleMenu() {
-        const icon = document.getElementById('menuIcon');
-        icon.classList.toggle('fa-bars');
-        icon.classList.toggle('fa-times');
-        // Resto del código de toggleMenu...
-        const sideMenu = document.getElementById('sideMenu');
-        const overlay = document.querySelector('.overlay');
-        sideMenu.classList.toggle('open');
-        overlay.classList.toggle('active');
-    }
-    </script>
 
     <!-- OVERLAY -->
     <div class="overlay" onclick="closeMenu()"></div>
@@ -895,23 +895,21 @@
             <i class="fas fa-share-alt"></i>
             <span>Compartir</span>
             <div style="display: flex; gap: 10px; margin-left: 15px;">
-            <div class="share-btn share-whatsapp" onclick="compartirWhatsApp()">
-                <i class="fab fa-whatsapp"></i>
+                <div class="share-btn share-whatsapp" onclick="compartirWhatsApp(event)">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div class="share-btn share-facebook" onclick="compartirFacebook(event)">
+                    <i class="fab fa-facebook-f"></i>
+                </div>
+                <div class="share-btn share-instagram" onclick="compartirInstagram(event)">
+                    <i class="fab fa-instagram"></i>
+                </div>
             </div>
-            <div class="share-btn share-facebook" onclick="compartirFacebook()">
-                <i class="fab fa-facebook-f"></i>
-            </div>
-            <div class="share-btn share-instagram" onclick="compartirTwitter()">
-                <i class="fab fa-instagram"></i>
-            </div>
-            </div>
-        </div>
-
         </div>
     </div>
 
     <!-- PERFIL HEADER -->
-    <div class="perfil-header" id="perfilHeader" style="background-image: url('path/to/image.jpg');" style="background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('path/to/image.jpg');
+    <div class="perfil-header" id="perfilHeader" style="background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('path/to/image.jpg');
         display: flex;
         justify-content: center;
         align-items: center;
@@ -921,60 +919,37 @@
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;">
-        
+
         <div class="perfil-logo" id="perfilLogo">C</div>
     </div>
 
-    <script>
-    // Add this code to sync the background image between header and compact menu
-    const updateHeaderBackground = () => {
-        const headerImage = document.getElementById('perfilHeader').style.backgroundImage;
-        if (headerImage) {
-            document.getElementById('menuCompacto').style.backgroundImage = headerImage;
-            document.getElementById('menuCompacto').style.backgroundSize = 'cover';
-            document.getElementById('menuCompacto').style.backgroundPosition = 'center';
-        }
-    };
-
-    // Call this after loading branding data
-    const observer = new MutationObserver(updateHeaderBackground);
-    observer.observe(document.getElementById('perfilHeader'), { 
-        attributes: true, 
-        attributeFilter: ['style'] 
-    });
-    </script>
-
     <div class="perfil-info">
-    <div>
-        <div class="perfil-nombre" id="perfilNombre">Cande Helado y Café</div>
-        <div class="perfil-horario" id="horarioInfo">Cargando horario...</div>
-    </div>
-
-    <button class="btn-pdf" onclick="descargarPDF()">
-        <i class="fas fa-download"></i> Descargar Carta
-    </button>
-
-    <!-- Botones de redes sociales -->
-    <div class="share-buttons" style="margin-left: 10px; display: flex; gap: 8px;">
-        <div class="share-btn share-whatsapp" onclick="compartirWhatsApp()">
-            <i class="fab fa-whatsapp"></i>
+        <div>
+            <div class="perfil-nombre" id="perfilNombre">Cande Helado y Café</div>
+            <div class="perfil-horario" id="horarioInfo">Cargando horario...</div>
         </div>
-        <div class="share-btn share-facebook" onclick="compartirFacebook()">
-            <i class="fab fa-facebook-f"></i>
+
+        <button class="btn-pdf" onclick="descargarPDF()">
+            <i class="fas fa-download"></i> Descargar Carta
+        </button>
+
+        <!-- Botones de redes sociales -->
+        <div class="share-buttons" style="margin-left: 10px; display: flex; gap: 8px;">
+            <div class="share-btn share-whatsapp" onclick="compartirWhatsApp(event)">
+                <i class="fab fa-whatsapp"></i>
+            </div>
+            <div class="share-btn share-facebook" onclick="compartirFacebook(event)">
+                <i class="fab fa-facebook-f"></i>
+            </div>
+            <div class="share-btn share-instagram" onclick="compartirInstagram(event)">
+                <i class="fa-brands fa-instagram"></i>
+            </div>
         </div>
-    <div class="share-btn share-instagram" onclick="compartirTwitter()">
-    <i class="fa-brands fa-instagram"></i>
-  </div>
-
-
-       
     </div>
-</div>
-
 
     <!-- MENÚ COMPACTO -->
     <div class="menu-compacto" id="menuCompacto">
-       <p style="color: black;">Cande Helado y Café</p> 
+        <p style="color: black;">Cande Helado y Café</p>
     </div>
 
     <!-- NAVEGACIÓN POR PESTAÑAS -->
@@ -1036,13 +1011,13 @@
     </div>
 
     <!-- PESTAÑA GALERÍA -->
-    <div style="display: none;"  class="tab-pane" id="galeria-tab">
+    <div style="display: none;" class="tab-pane" id="galeria-tab">
         <div class="seccion">
             <h2><i class="fas fa-images"></i> Galería</h2>
-             <div class="galeria-grid" id="galeriaContainer">
+            <div class="galeria-grid" id="galeriaContainer">
                 <!-- Las imágenes se cargarán aquí -->
             </div>
-            
+
             <div style="text-align: center; margin-top: 30px;">
                 <button class="btn" onclick="cambiarModoGaleria()">Cambiar modo de galería</button>
             </div>
@@ -1056,8 +1031,6 @@
     </div>
 
     <!-- SCRIPTS -->
-
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script>
@@ -1081,9 +1054,12 @@
 
         // FUNCIONES DE NAVEGACIÓN Y MENÚ
         function toggleMenu() {
+            const icon = document.getElementById('menuIcon');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+
             const sideMenu = document.getElementById('sideMenu');
             const overlay = document.querySelector('.overlay');
-
             sideMenu.classList.toggle('open');
             overlay.classList.toggle('active');
         }
@@ -1094,6 +1070,11 @@
 
             sideMenu.classList.remove('open');
             overlay.classList.remove('active');
+
+            // Restaurar el icono del menú
+            const icon = document.getElementById('menuIcon');
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
         }
 
         function switchTab(tabName) {
@@ -1253,7 +1234,6 @@
             }
         }
 
-
         async function cargarCategorias() {
             try {
                 const { data, error } = await supabase
@@ -1381,29 +1361,29 @@
             });
         }
 
-       function mostrarCategoriasEventos() {
-    const container = document.getElementById('categoriaEventosMenu');
-    const eventosTab = document.getElementById('eventos-tab');
+        function mostrarCategoriasEventos() {
+            const container = document.getElementById('categoriaEventosMenu');
+            const eventosTab = document.getElementById('eventos-tab');
 
-    // Extraer categorías únicas de los eventos
-    const categoriasUnicas = [...new Set(eventos.map(evento => evento.categoria_evento).filter(Boolean))];
+            // Extraer categorías únicas de los eventos
+            const categoriasUnicas = [...new Set(eventos.map(evento => evento.categoria_evento).filter(Boolean))];
 
-    // Si no hay eventos → ocultar toda la sección
-    if (eventos.length === 0) {
-        eventosTab.style.display = "none";
-        return;
-    } else {
-        eventosTab.style.display = "block"; // mostrar si hay
-    }
+            // Si no hay eventos → ocultar toda la sección
+            if (eventos.length === 0) {
+                eventosTab.style.display = "none";
+                return;
+            } else {
+                eventosTab.style.display = "block"; // mostrar si hay
+            }
 
-    // Si no hay categorías pero sí eventos → solo dejar "Todos"
-    if (categoriasUnicas.length === 0) {
-        container.innerHTML = '<div class="cate-evento active" data-categoria="todos">Todos</div>';
-        return;
-    }
+            // Si no hay categorías pero sí eventos → solo dejar "Todos"
+            if (categoriasUnicas.length === 0) {
+                container.innerHTML = '<div class="cate-evento active" data-categoria="todos">Todos</div>';
+                return;
+            }
 
-    // Renderizar categorías dinámicas
-    container.innerHTML = `
+            // Renderizar categorías dinámicas
+            container.innerHTML = `
         <div class="cate-evento active" data-categoria="todos">Todos</div>
         ${categoriasUnicas.map(categoria => `
           <div class="cate-evento" data-categoria="${categoria}">
@@ -1412,18 +1392,17 @@
         `).join('')}
     `;
 
-    // Agregar eventos de click
-    container.querySelectorAll('.cate-evento').forEach(cate => {
-        cate.addEventListener('click', () => {
-            container.querySelectorAll('.cate-evento').forEach(c => c.classList.remove('active'));
-            cate.classList.add('active');
+            // Agregar eventos de click
+            container.querySelectorAll('.cate-evento').forEach(cate => {
+                cate.addEventListener('click', () => {
+                    container.querySelectorAll('.cate-evento').forEach(c => c.classList.remove('active'));
+                    cate.classList.add('active');
 
-            const categoriaId = cate.dataset.categoria;
-            filtrarEventosPorCategoria(categoriaId);
-        });
-    });
-}
-
+                    const categoriaId = cate.dataset.categoria;
+                    filtrarEventosPorCategoria(categoriaId);
+                });
+            });
+        }
 
         function filtrarEventosPorCategoria(categoriaId) {
             const eventosFiltrados = categoriaId === 'todos'
@@ -1458,7 +1437,7 @@
             });
         }
 
-          // Función para mostrar productos
+        // Función para mostrar productos
         function mostrarProductos() {
             const container = document.getElementById('productosContainer');
 
@@ -1529,9 +1508,9 @@
                 </div>
             `).join('');
         }
-        
 
-    function mostrarProductosDefault() {
+
+        function mostrarProductosDefault() {
             const container = document.getElementById('productosContainer');
             container.innerHTML = `
                 <div class="seccion">
@@ -1546,7 +1525,7 @@
 
         function mostrarEventos() {
             const container = document.getElementById('eventosContainer');
-              const categoriasMenu = document.getElementById('categoriaEventosMenu');
+            const categoriasMenu = document.getElementById('categoriaEventosMenu');
             if (categoriasMenu) {
                 categoriasMenu.style.display = "flex"; // o block, según tu CSS
             }
@@ -1612,17 +1591,17 @@
         </div>
       `}).join('');
         }
-function mostrarEventosDefault() {
-    const container = document.getElementById('eventosContainer');
-    const categoriasMenu = document.getElementById('categoriaEventosMenu');
+        function mostrarEventosDefault() {
+            const container = document.getElementById('eventosContainer');
+            const categoriasMenu = document.getElementById('categoriaEventosMenu');
 
-    // Ocultar menú de categorías
-    if (categoriasMenu) {
-        categoriasMenu.style.display = "none";
-    }
+            // Ocultar menú de categorías
+            if (categoriasMenu) {
+                categoriasMenu.style.display = "none";
+            }
 
-    // Mostrar animación de "sin eventos"
-    container.innerHTML = `
+            // Mostrar animación de "sin eventos"
+            container.innerHTML = `
         <div style="text-align:center; margin-top:40px;">
             <lottie-player 
                 src="https://assets4.lottiefiles.com/packages/lf20_jcikwtux.json"  
@@ -1637,105 +1616,6 @@ function mostrarEventosDefault() {
             </p>
         </div>
     `;
-}
-
-
-        // let galeria = [];
-        let modoConImagenes = false;
-        
-        // Inicializar la galería
-        function inicializarGaleria() {
-            // Simular cambio entre modos
-            if (modoConImagenes) {
-                galeria = [
-                    {
-                        imagen: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
-                        titulo: "Café de Especialidad",
-                        descripcion: "Nuestro café premium de origen único"
-                    },
-                    {
-                        imagen: "https://images.unsplash.com/photo-1564894809617-54d66de8cab1",
-                        titulo: "Helado Artesanal",
-                        descripcion: "Helado casero con ingredientes naturales"
-                    },
-                    {
-                        imagen: "https://images.unsplash.com/photo-1554118811-1e0d58224f24",
-                        titulo: "Ambiente Acogedor",
-                        descripcion: "Disfruta de nuestro espacio único"
-                    },
-                    {
-                        imagen: "https://images.unsplash.com/photo-1498804103079-a6351b050096",
-                        titulo: "Té Premium",
-                        descripcion: "Selección de tés de alta calidad"
-                    }
-                ];
-            } else {
-                galeria = []; // Galería vacía
-            }
-            
-            mostrarGaleria();
-        }
-        
-        // Función corregida para mostrar la galería
-        function mostrarGaleria() {
-            const container = document.getElementById('galeriaContainer');
-            
-            if (galeria.length === 0) {
-                // Mostrar mensaje cuando no hay imágenes
-                container.innerHTML = `
-                    <div class="sin-imagenes">
-                        <i>📷</i>
-                        <p>No hay imágenes disponibles en la galería</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = galeria.map(imagen => {
-                return `
-                    <div class="galeria-item" onclick="mostrarImagenCompleta('${imagen.imagen}', '${imagen.titulo || ''}')">
-                        <img src="${imagen.imagen}" alt="${imagen.titulo || 'Imagen de la galería'}" 
-                             onerror="this.src='https://via.placeholder.com/250x200?text=Error+al+cargar'">
-                        <div class="galeria-overlay">
-                            ${imagen.titulo ? `<strong>${imagen.titulo}</strong>` : ''}
-                            ${imagen.descripcion ? `<div style="font-size: 12px; margin-top: 5px;">${imagen.descripcion}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // Función para mostrar imagen en modal
-        function mostrarImagenCompleta(src, titulo) {
-            const modal = document.getElementById('modalImagen');
-            const modalImg = document.getElementById('imagenCompleta');
-            const captionText = document.getElementById('caption');
-            
-            modal.style.display = 'flex';
-            modalImg.src = src;
-            captionText.innerHTML = titulo || '';
-        }
-        
-        // Función para cerrar el modal
-        function cerrarModal() {
-            document.getElementById('modalImagen').style.display = 'none';
-        }
-        
-        // Función para cambiar entre modos (con y sin imágenes)
-        function cambiarModoGaleria() {
-            modoConImagenes = !modoConImagenes;
-            inicializarGaleria();
-        }
-        
-        // Inicializar la galería al cargar la página
-        document.addEventListener('DOMContentLoaded', inicializarGaleria);
-        
-        // Cerrar modal al hacer clic fuera de la imagen
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalImagen');
-            if (event.target === modal) {
-                cerrarModal();
-            }
         }
 
         // FUNCIONES AUXILIARES
@@ -1748,9 +1628,6 @@ function mostrarEventosDefault() {
                 day: 'numeric'
             });
         }
-
-
-        // ********************************************************************************************************
 
         async function mostrarDetalleProducto(productoId) {
             const producto = productos.find(p => p.id === productoId);
@@ -1854,12 +1731,6 @@ function mostrarEventosDefault() {
             });
         }
 
-
-
-        // *******************************************************************************************
-
-
-
         function mostrarModalContacto() {
             if (!contactoInfo) {
                 alert('Información de contacto no disponible');
@@ -1871,6 +1742,18 @@ function mostrarEventosDefault() {
             modal.onclick = (e) => {
                 if (e.target === modal) modal.remove();
             };
+
+            // Parsear las redes sociales si están en formato JSON
+            let redesSociales = {};
+            try {
+                if (typeof contactoInfo.redes_sociales === 'string') {
+                    redesSociales = JSON.parse(contactoInfo.redes_sociales);
+                } else if (contactoInfo.redes_sociales) {
+                    redesSociales = contactoInfo.redes_sociales;
+                }
+            } catch (e) {
+                console.error('Error parsing redes_sociales:', e);
+            }
 
             modal.innerHTML = `
         <div class="modal-content">
@@ -1885,10 +1768,10 @@ function mostrarEventosDefault() {
               </a>
             </p>
           ` : ''}
-          ${contactoInfo.redes_sociales ? `
+          ${Object.keys(redesSociales).length > 0 ? `
             <div style="margin-top: 15px;">
               <h4>Síguenos en:</h4>
-              ${Object.entries(contactoInfo.redes_sociales).map(([red, url]) => `
+              ${Object.entries(redesSociales).map(([red, url]) => `
                 <a href="${url}" target="_blank" style="margin-right: 10px; font-size: 24px; color: var(--color-principal);">
                   <i class="fab fa-${red}"></i>
                 </a>
@@ -1940,26 +1823,51 @@ function mostrarEventosDefault() {
         }
 
         function obtenerNombreDia(diaSemana) {
-            const dias = ['Domingo', 'Luno', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             return dias[diaSemana] || `Día ${diaSemana}`;
         }
 
         // FUNCIONES PARA COMPARTIR
-        function compartirWhatsApp() {
+        function compartirWhatsApp(event) {
+            if (event) event.stopPropagation();
             const texto = `¡Mira la carta de ${brandingData?.nombre_negocio || 'Cande Helado y Café'}!`;
             const url = encodeURIComponent(window.location.href);
             window.open(`https://wa.me/?text=${texto} ${url}`, '_blank');
         }
 
-        function compartirFacebook() {
+        function compartirFacebook(event) {
+            if (event) event.stopPropagation();
             const url = encodeURIComponent(window.location.href);
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
         }
 
-        function compartirTwitter() {
-            const texto = encodeURIComponent(`¡Mira la carta de ${brandingData?.nombre_negocio || 'Cande Helado y Café'}!`);
-            const url = encodeURIComponent(window.location.href);
-            window.open(`https://twitter.com/intent/tweet?text=${texto}&url=${url}`, '_blank');
+        function compartirInstagram(event) {
+            if (event) event.stopPropagation();
+
+            // Parsear las redes sociales si están en formato JSON
+            let redesSociales = {};
+            try {
+                if (typeof contactoInfo?.redes_sociales === 'string') {
+                    redesSociales = JSON.parse(contactoInfo.redes_sociales);
+                } else if (contactoInfo?.redes_sociales) {
+                    redesSociales = contactoInfo.redes_sociales;
+                }
+            } catch (e) {
+                console.error('Error parsing redes_sociales:', e);
+            }
+
+            // Si tenemos URL de Instagram, abrirla
+            if (redesSociales.instagram) {
+                window.open(redesSociales.instagram, '_blank');
+            } else {
+                // Si no, mostrar un mensaje
+                alert('No tenemos información de Instagram en este momento. ¡Visítanos pronto!');
+            }
+        }
+
+        function compartirRedes() {
+            // Esta función puede mostrar un modal con opciones de compartir
+            alert('Selecciona una red social para compartir');
         }
 
         // FUNCIÓN PARA GENERAR PDF
