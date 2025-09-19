@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Cande Helado y Café</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --color-principal: #ff6b35;
+            --color-secundario: #f7931e;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .bg-primary-custom {
+            background-color: var(--color-principal);
+        }
+        
+        .btn-primary-custom {
+            background-color: var(--color-principal);
+            border-color: var(--color-principal);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #e55a2a;
+            border-color: #e55a2a;
+            color: white;
+        }
+        
+        .text-primary-custom {
+            color: var(--color-principal) !important;
+        }
+        
+        .border-primary-custom {
+            border-color: var(--color-principal) !important;
+        }
+        
+        .sidebar {
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            background: linear-gradient(to bottom, var(--color-principal), var(--color-secundario));
+            color: white;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.8rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .logo-preview, .banner-preview {
+            max-width: 100%;
+            height: auto;
+            border: 2px dashed #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        
+        .color-box {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .day-selector {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .day-selector.active {
+            background-color: var(--color-principal);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .config-section {
+            display: none;
+        }
+        
+        .config-section.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-open {
+            background-color: #28a745;
+        }
+        
+        .status-closed {
+            background-color: #dc3545;
+        }
+        
+        .social-input {
+            position: relative;
+        }
+        
+        .social-input i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+        
+        .social-input input {
+            padding-left: 40px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <div class="text-center mb-4 mt-2">
+                        <h4 class="text-white">Cande Configuración</h4>
+                        <p class="text-white-50 small">Panel de administración</p>
+                    </div>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active" data-section="branding">
+                                <i class="bi bi-palette me-2"></i> Branding
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-section="horarios">
+                                <i class="bi bi-clock me-2"></i> Horarios
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-section="contacto">
+                                <i class="bi bi-telephone me-2"></i> Contacto
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link" data-section="redes">
+                                <i class="bi bi-share me-2"></i> Redes Sociales
+                            </a>
+                        </li>
+
+                        <a style="color: red; text-align: center;" href="ad.html">ATRAS</a>
+                    </ul>
+                    <hr class="bg-light">
+                    <div class="text-center">
+                        <button id="btnGuardarTodo" class="btn btn-light w-100 mb-2">
+                            <i class="bi bi-check-circle me-2"></i>Guardar Cambios
+                        </button>
+                        <div class="text-white-50 small mt-3" id="lastSaved">
+                            Última actualización: Nunca
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="text-primary-custom">Configuración de la Tienda</h2>
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm text-primary-custom me-2" id="loadingSpinner" style="display: none;"></div>
+                        <span class="badge bg-primary-custom">Conectado</span>
+                    </div>
+                </div>
+                
+                <!-- Sección Branding -->
+                <div class="config-section active" id="branding-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary-custom text-white">
+                                    <h5 class="mb-0">Logo de la Empresa</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="logoUpload" class="form-label">Subir nuevo logo</label>
+                                        <input class="form-control" type="file" id="logoUpload" accept="image/*">
+                                        <div class="form-text">Formatos recomendados: PNG o SVG. Tamaño máximo: 2MB</div>
+                                    </div>
+                                    <div id="logoPreviewContainer">
+                                        <p class="fw-medium">Vista previa:</p>
+                                        <img id="logoPreview" class="logo-preview" src="https://placehold.co/300x100?text=Logo+de+la+Empresa" alt="Vista previa del logo">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary-custom text-white">
+                                    <h5 class="mb-0">Banner de la Empresa</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="bannerUpload" class="form-label">Subir nuevo banner</label>
+                                        <input class="form-control" type="file" id="bannerUpload" accept="image/*">
+                                        <div class="form-text">Formatos recomendados: JPG o PNG. Tamaño máximo: 2MB</div>
+                                    </div>
+                                    <div id="bannerPreviewContainer">
+                                        <p class="fw-medium">Vista previa:</p>
+                                        <img id="bannerPreview" class="banner-preview" src="https://placehold.co/600x200?text=Banner+Promocional" alt="Vista previa del banner">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary-custom text-white">
+                                    <h5 class="mb-0">Nombre del Negocio</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="nombreNegocio" class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" id="nombreNegocio" value="Cande Helado y Café">
+                                        <div class="form-text">Este nombre aparecerá en tu sitio web y aplicaciones</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-primary-custom text-white">
+                                    <h5 class="mb-0">Colores Corporativos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="colorPrincipal" class="form-label">Color Principal</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <span class="color-box" id="colorPrincipalPreview"></span>
+                                            </span>
+                                            <input type="color" class="form-control form-control-color" id="colorPrincipal" value="#ff6b35" title="Elige el color principal">
+                                            <input type="text" class="form-control" id="colorPrincipalText" value="#ff6b35">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="colorSecundario" class="form-label">Color Secundario</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <span class="color-box" id="colorSecundarioPreview"></span>
+                                            </span>
+                                            <input type="color" class="form-control form-control-color" id="colorSecundario" value="#f7931e" title="Elige el color secundario">
+                                            <input type="text" class="form-control" id="colorSecundarioText" value="#f7931e">
+                                        </div>
+                                        <div class="form-text">Los colores se aplicarán a botones, encabezados y elementos destacados</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección Horarios -->
+                <div class="config-section" id="horarios-section">
+                    <h2 class="mb-4">Configuración de Horarios</h2>
+                    
+                    <div class="card">
+                        <div class="card-header bg-primary-custom text-white">
+                            <h5 class="mb-0">Horario de Atención</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex mb-4 day-selectors flex-wrap">
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="1">Lun</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="2">Mar</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="3">Mié</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="4">Jue</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="5">Vie</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="6">Sáb</button>
+                                <button class="btn btn-outline-primary day-selector me-2 mb-2" data-dia="0">Dom</button>
+                            </div>
+                            
+                            <div id="horarioConfig">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Apertura</label>
+                                        <input type="time" class="form-control" id="aperturaTime">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Cierre</label>
+                                        <input type="time" class="form-control" id="cierreTime">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check mt-4 pt-2">
+                                            <input class="form-check-input" type="checkbox" id="cerradoCheck">
+                                            <label class="form-check-label" for="cerradoCheck">
+                                                Cerrado este día
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="btnAplicarHorario" class="btn btn-primary-custom">Aplicar a días seleccionados</button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h5>Horarios establecidos</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="tablaHorarios">
+                                        <thead>
+                                            <tr>
+                                                <th>Día</th>
+                                                <th>Apertura</th>
+                                                <th>Cierre</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Lunes</td>
+                                                <td>09:00</td>
+                                                <td>18:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Martes</td>
+                                                <td>09:00</td>
+                                                <td>18:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Miércoles</td>
+                                                <td>09:00</td>
+                                                <td>18:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Jueves</td>
+                                                <td>09:00</td>
+                                                <td>18:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Viernes</td>
+                                                <td>09:00</td>
+                                                <td>20:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Sábado</td>
+                                                <td>10:00</td>
+                                                <td>20:00</td>
+                                                <td><span class="status-indicator status-open"></span> Abierto</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Domingo</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><span class="status-indicator status-closed"></span> Cerrado</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección Contacto -->
+                <div class="config-section" id="contacto-section">
+                    <h2 class="mb-4">Información de Contacto</h2>
+                    
+                    <div class="card">
+                        <div class="card-header bg-primary-custom text-white">
+                            <h5 class="mb-0">Datos de Contacto</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <input type="text" class="form-control" id="telefono" placeholder="+34 123 456 789">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" placeholder="info@candeheladoycafe.com">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="direccion" class="form-label">Dirección</label>
+                                <textarea class="form-control" id="direccion" rows="2" placeholder="Dirección completa de tu negocio"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ubicacionGPS" class="form-label">Ubicación GPS (Coordenadas o enlace de Google Maps)</label>
+                                <input type="text" class="form-control" id="ubicacionGPS" placeholder="40.4168, -3.7038 o https://goo.gl/maps/...">
+                                <div class="form-text">Usa coordenadas (latitud, longitud) o un enlace a Google Maps</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección Redes Sociales -->
+                <div class="config-section" id="redes-section">
+                    <h2 class="mb-4">Redes Sociales</h2>
+                    
+                    <div class="card">
+                        <div class="card-header bg-primary-custom text-white">
+                            <h5 class="mb-0">Enlaces a Redes Sociales</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3 social-input">
+                                <i class="bi bi-facebook text-primary"></i>
+                                <label for="facebookUrl" class="form-label visually-hidden">Facebook</label>
+                                <input type="url" class="form-control" id="facebookUrl" placeholder="https://facebook.com/candeheladoycafe">
+                            </div>
+                            <div class="mb-3 social-input">
+                                <i class="bi bi-instagram text-danger"></i>
+                                <label for="instagramUrl" class="form-label visually-hidden">Instagram</label>
+                                <input type="url" class="form-control" id="instagramUrl" placeholder="https://instagram.com/candeheladoycafe">
+                            </div>
+                            <div class="mb-3 social-input">
+                                <i class="bi bi-twitter text-info"></i>
+                                <label for="twitterUrl" class="form-label visually-hidden">Twitter</label>
+                                <input type="url" class="form-control" id="twitterUrl" placeholder="https://twitter.com/candeheladoycafe">
+                            </div>
+                            <div class="mb-3 social-input">
+                                <i class="bi bi-whatsapp text-success"></i>
+                                <label for="whatsappUrl" class="form-label visually-hidden">WhatsApp</label>
+                                <input type="url" class="form-control" id="whatsappUrl" placeholder="https://wa.me/34123456789">
+                            </div>
+                            <div class="mb-3 social-input">
+                                <i class="bi bi-tiktok"></i>
+                                <label for="tiktokUrl" class="form-label visually-hidden">TikTok</label>
+                                <input type="url" class="form-control" id="tiktokUrl" placeholder="https://tiktok.com/@candeheladoycafe">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div class="toast" id="liveToast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Sistema de Configuración</strong>
+            <small id="toastTime">Ahora</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Los cambios se han guardado correctamente.
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuración de Supabase
+        const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        const CONFIGURACION = {
+            BUCKET_IMAGENES: 'productos-imagenes',
+            IMAGENES_HABILITADAS: true,
+            MAX_TAMAÑO_IMAGEN: 2 * 1024 * 1024 // 2MB máximo
+        };
+        
+        // Variables globales
+        let currentBranding = null;
+        let currentHorarios = [];
+        let currentContacto = null;
+        let selectedDays = [];
+        
+        // Días de la semana
+        const diasSemana = [
+            "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+        ];
+        
+        // Inicializar la aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            inicializarApp();
+            configurarEventListeners();
+        });
+        
+        function inicializarApp() {
+            // Cargar datos existentes
+            cargarBranding();
+            cargarHorarios();
+            cargarContacto();
+            
+            // Configurar vista previa de colores
+            actualizarVistaPreviaColores();
+            
+            // Configurar navegación
+            configurarNavegacion();
+        }
+        
+        function configurarNavegacion() {
+            // Configurar event listeners para los enlaces de navegación
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remover clase active de todos los enlaces
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    // Agregar clase active al enlace clickeado
+                    this.classList.add('active');
+                    
+                    // Ocultar todas las secciones
+                    document.querySelectorAll('.config-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // Mostrar la sección correspondiente
+                    const sectionId = this.getAttribute('data-section') + '-section';
+                    document.getElementById(sectionId).classList.add('active');
+                });
+            });
+        }
+        
+        function configurarEventListeners() {
+            // Event listeners para colores
+            document.getElementById('colorPrincipal').addEventListener('input', function() {
+                document.getElementById('colorPrincipalText').value = this.value;
+                actualizarVistaPreviaColores();
+            });
+            
+            document.getElementById('colorPrincipalText').addEventListener('input', function() {
+                const colorValue = this.value;
+                if (isValidColor(colorValue)) {
+                    document.getElementById('colorPrincipal').value = colorValue;
+                    actualizarVistaPreviaColores();
+                }
+            });
+            
+            document.getElementById('colorSecundario').addEventListener('input', function() {
+                document.getElementById('colorSecundarioText').value = this.value;
+                actualizarVistaPreviaColores();
+            });
+            
+            document.getElementById('colorSecundarioText').addEventListener('input', function() {
+                const colorValue = this.value;
+                if (isValidColor(colorValue)) {
+                    document.getElementById('colorSecundario').value = colorValue;
+                    actualizarVistaPreviaColores();
+                }
+            });
+            
+            // Event listeners para imágenes
+            document.getElementById('logoUpload').addEventListener('change', function(e) {
+                manejarSubidaImagen(e.target.files[0], 'logo');
+            });
+            
+            document.getElementById('bannerUpload').addEventListener('change', function(e) {
+                manejarSubidaImagen(e.target.files[0], 'banner');
+            });
+            
+            // Event listener para el botón de guardar
+            document.getElementById('btnGuardarTodo').addEventListener('click', guardarTodo);
+            
+            // Event listener para aplicar horarios
+            document.getElementById('btnAplicarHorario').addEventListener('click', aplicarHorarioADias);
+            
+            // Selectores de días
+            document.querySelectorAll('.day-selector').forEach(selector => {
+                selector.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    const diaIndex = parseInt(this.getAttribute('data-dia'));
+                    
+                    if (this.classList.contains('active')) {
+                        if (!selectedDays.includes(diaIndex)) {
+                            selectedDays.push(diaIndex);
+                        }
+                    } else {
+                        selectedDays = selectedDays.filter(d => d !== diaIndex);
+                    }
+                });
+            });
+        }
+        
+        function isValidColor(color) {
+            const s = new Option().style;
+            s.color = color;
+            return s.color !== '';
+        }
+        
+        function actualizarVistaPreviaColores() {
+            const colorPrincipal = document.getElementById('colorPrincipal').value;
+            const colorSecundario = document.getElementById('colorSecundario').value;
+            
+            document.getElementById('colorPrincipalPreview').style.backgroundColor = colorPrincipal;
+            document.getElementById('colorSecundarioPreview').style.backgroundColor = colorSecundario;
+            
+            // Actualizar variables CSS
+            document.documentElement.style.setProperty('--color-principal', colorPrincipal);
+            document.documentElement.style.setProperty('--color-secundario', colorSecundario);
+        }
+        
+        async function cargarBranding() {
+            try {
+                mostrarCarga(true);
+                const { data, error } = await supabase
+                    .from('branding')
+                    .select('*')
+                    .order('id', { ascending: false })
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Error de Supabase:', error);
+                    throw error;
+                }
+                
+                if (data && data.length > 0) {
+                    currentBranding = data[0];
+                    
+                    // Llenar formulario
+                    document.getElementById('nombreNegocio').value = currentBranding.nombre_negocio;
+                    document.getElementById('colorPrincipal').value = currentBranding.color_principal;
+                    document.getElementById('colorPrincipalText').value = currentBranding.color_principal;
+                    document.getElementById('colorSecundario').value = currentBranding.color_secundario;
+                    document.getElementById('colorSecundarioText').value = currentBranding.color_secundario;
+                    
+                    // Cargar imágenes si existen
+                    if (currentBranding.logo_url) {
+                        document.getElementById('logoPreview').src = currentBranding.logo_url;
+                    }
+                    
+                    if (currentBranding.banner_url) {
+                        document.getElementById('bannerPreview').src = currentBranding.banner_url;
+                    }
+                    
+                    actualizarVistaPreviaColores();
+                    mostrarNotificacion('Configuración de branding cargada correctamente', 'success');
+                } else {
+                    // Valores por defecto
+                    document.getElementById('nombreNegocio').value = 'Cande Helado y Café';
+                    document.getElementById('colorPrincipal').value = '#ff6b35';
+                    document.getElementById('colorPrincipalText').value = '#ff6b35';
+                    document.getElementById('colorSecundario').value = '#f7931e';
+                    document.getElementById('colorSecundarioText').value = '#f7931e';
+                    actualizarVistaPreviaColores();
+                }
+            } catch (error) {
+                console.error('Error cargando branding:', error);
+                mostrarNotificacion('Error al cargar la configuración de branding. Verifica la conexión.', 'error');
+            } finally {
+                mostrarCarga(false);
+            }
+        }
+        
+        async function cargarHorarios() {
+            try {
+                mostrarCarga(true);
+                const { data, error } = await supabase
+                    .from('horarios')
+                    .select('*')
+                    .order('dia_semana', { ascending: true });
+                
+                if (error) {
+                    console.error('Error de Supabase:', error);
+                    throw error;
+                }
+                
+                currentHorarios = data || [];
+                actualizarTablaHorarios();
+                mostrarNotificacion('Horarios cargados correctamente', 'success');
+            } catch (error) {
+                console.error('Error cargando horarios:', error);
+                mostrarNotificacion('Error al cargar los horarios. Verifica la conexión.', 'error');
+            } finally {
+                mostrarCarga(false);
+            }
+        }
+        
+        async function cargarContacto() {
+            try {
+                mostrarCarga(true);
+                const { data, error } = await supabase
+                    .from('contacto')
+                    .select('*')
+                    .order('id', { ascending: false })
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Error de Supabase:', error);
+                    throw error;
+                }
+                
+                if (data && data.length > 0) {
+                    currentContacto = data[0];
+                    
+                    // Llenar formulario
+                    document.getElementById('telefono').value = currentContacto.telefono || '';
+                    document.getElementById('email').value = currentContacto.email || '';
+                    document.getElementById('direccion').value = currentContacto.direccion || '';
+                    document.getElementById('ubicacionGPS').value = currentContacto.ubicacion_gps || '';
+                    
+                    // Cargar redes sociales si existen
+                    if (currentContacto.redes_sociales) {
+                        const redes = currentContacto.redes_sociales;
+                        document.getElementById('facebookUrl').value = redes.facebook || '';
+                        document.getElementById('instagramUrl').value = redes.instagram || '';
+                        document.getElementById('twitterUrl').value = redes.twitter || '';
+                        document.getElementById('whatsappUrl').value = redes.whatsapp || '';
+                        document.getElementById('tiktokUrl').value = redes.tiktok || '';
+                    }
+                    
+                    mostrarNotificacion('Información de contacto cargada correctamente', 'success');
+                }
+            } catch (error) {
+                console.error('Error cargando contacto:', error);
+                mostrarNotificacion('Error al cargar la información de contacto. Verifica la conexión.', 'error');
+            } finally {
+                mostrarCarga(false);
+            }
+        }
+        
+        function actualizarTablaHorarios() {
+            const tbody = document.querySelector('#tablaHorarios tbody');
+            tbody.innerHTML = '';
+            
+            // Ordenar horarios por día de la semana
+            const horariosOrdenados = [...currentHorarios].sort((a, b) => a.dia_semana - b.dia_semana);
+            
+            horariosOrdenados.forEach(horario => {
+                const tr = document.createElement('tr');
+                
+                const diaTd = document.createElement('td');
+                diaTd.textContent = diasSemana[horario.dia_semana];
+                
+                const aperturaTd = document.createElement('td');
+                aperturaTd.textContent = horario.cerrado ? '-' : (horario.apertura || '-');
+                
+                const cierreTd = document.createElement('td');
+                cierreTd.textContent = horario.cerrado ? '-' : (horario.cierre || '-');
+                
+                const estadoTd = document.createElement('td');
+                const statusIndicator = document.createElement('span');
+                statusIndicator.className = `status-indicator ${horario.cerrado ? 'status-closed' : 'status-open'}`;
+                
+                estadoTd.appendChild(statusIndicator);
+                estadoTd.appendChild(document.createTextNode(horario.cerrado ? ' Cerrado' : ' Abierto'));
+                
+                tr.appendChild(diaTd);
+                tr.appendChild(aperturaTd);
+                tr.appendChild(cierreTd);
+                tr.appendChild(estadoTd);
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        async function manejarSubidaImagen(archivo, tipo) {
+            if (!archivo) return;
+            
+            // Validar tamaño
+            if (archivo.size > CONFIGURACION.MAX_TAMAÑO_IMAGEN) {
+                mostrarNotificacion('La imagen es demasiado grande. El tamaño máximo es 2MB.', 'error');
+                return;
+            }
+            
+            try {
+                mostrarCarga(true);
+                // Subir imagen a Supabase Storage
+                const nombreArchivo = `${tipo}_${Date.now()}_${archivo.name}`;
+                const { data, error } = await supabase.storage
+                    .from(CONFIGURACION.BUCKET_IMAGENES)
+                    .upload(nombreArchivo, archivo);
+                
+                if (error) {
+                    console.error('Error de Supabase:', error);
+                    throw error;
+                }
+                
+                // Obtener URL pública
+                const { data: { publicUrl } } = supabase.storage
+                    .from(CONFIGURACION.BUCKET_IMAGENES)
+                    .getPublicUrl(nombreArchivo);
+                
+                // Actualizar vista previa
+                document.getElementById(`${tipo}Preview`).src = publicUrl;
+                
+                // Guardar URL en el objeto correspondiente
+                if (tipo === 'logo') {
+                    if (!currentBranding) currentBranding = {};
+                    currentBranding.logo_url = publicUrl;
+                } else if (tipo === 'banner') {
+                    if (!currentBranding) currentBranding = {};
+                    currentBranding.banner_url = publicUrl;
+                }
+                
+                mostrarNotificacion(`${tipo === 'logo' ? 'Logo' : 'Banner'} subido correctamente`, 'success');
+            } catch (error) {
+                console.error(`Error subiendo ${tipo}:`, error);
+                mostrarNotificacion(`Error al subir el ${tipo}. Verifica la conexión.`, 'error');
+            } finally {
+                mostrarCarga(false);
+            }
+        }
+        
+        function aplicarHorarioADias() {
+            const apertura = document.getElementById('aperturaTime').value;
+            const cierre = document.getElementById('cierreTime').value;
+            const cerrado = document.getElementById('cerradoCheck').checked;
+            
+            if (selectedDays.length === 0) {
+                mostrarNotificacion('Selecciona al menos un día', 'error');
+                return;
+            }
+            
+            if (!cerrado && (!apertura || !cierre)) {
+                mostrarNotificacion('Debes especificar horario de apertura y cierre', 'error');
+                return;
+            }
+            
+            // Actualizar horarios en memoria
+            selectedDays.forEach(dia => {
+                const index = currentHorarios.findIndex(h => h.dia_semana === dia);
+                
+                if (index !== -1) {
+                    // Actualizar horario existente
+                    currentHorarios[index].apertura = cerrado ? null : apertura;
+                    currentHorarios[index].cierre = cerrado ? null : cierre;
+                    currentHorarios[index].cerrado = cerrado;
+                } else {
+                    // Crear nuevo horario
+                    currentHorarios.push({
+                        dia_semana: dia,
+                        apertura: cerrado ? null : apertura,
+                        cierre: cerrado ? null : cierre,
+                        cerrado: cerrado
+                    });
+                }
+            });
+            
+            actualizarTablaHorarios();
+            mostrarNotificacion('Horarios aplicados correctamente', 'success');
+            
+            // Limpiar selección
+            document.querySelectorAll('.day-selector.active').forEach(el => {
+                el.classList.remove('active');
+            });
+            selectedDays = [];
+            
+            // Limpiar formulario
+            document.getElementById('aperturaTime').value = '';
+            document.getElementById('cierreTime').value = '';
+            document.getElementById('cerradoCheck').checked = false;
+        }
+        
+        async function guardarTodo() {
+            try {
+                mostrarCarga(true);
+                // Guardar branding
+                if (currentBranding) {
+                    const { error } = await supabase
+                        .from('branding')
+                        .upsert({
+                            ...currentBranding,
+                            nombre_negocio: document.getElementById('nombreNegocio').value,
+                            color_principal: document.getElementById('colorPrincipal').value,
+                            color_secundario: document.getElementById('colorSecundario').value,
+                            updated_at: new Date()
+                        });
+                    
+                    if (error) {
+                        console.error('Error de Supabase:', error);
+                        throw error;
+                    }
+                }
+                
+                // Guardar horarios
+                for (const horario of currentHorarios) {
+                    const { error } = await supabase
+                        .from('horarios')
+                        .upsert({
+                            ...horario,
+                            updated_at: new Date()
+                        });
+                    
+                    if (error) {
+                        console.error('Error de Supabase:', error);
+                        throw error;
+                    }
+                }
+                
+                // Guardar contacto
+                const redesSociales = {
+                    facebook: document.getElementById('facebookUrl').value,
+                    instagram: document.getElementById('instagramUrl').value,
+                    twitter: document.getElementById('twitterUrl').value,
+                    whatsapp: document.getElementById('whatsappUrl').value,
+                    tiktok: document.getElementById('tiktokUrl').value
+                };
+                
+                if (currentContacto) {
+                    const { error } = await supabase
+                        .from('contacto')
+                        .upsert({
+                            ...currentContacto,
+                            telefono: document.getElementById('telefono').value,
+                            email: document.getElementById('email').value,
+                            direccion: document.getElementById('direccion').value,
+                            ubicacion_gps: document.getElementById('ubicacionGPS').value,
+                            redes_sociales: redesSociales,
+                            updated_at: new Date()
+                        });
+                    
+                    if (error) {
+                        console.error('Error de Supabase:', error);
+                        throw error;
+                    }
+                } else {
+                    const { error } = await supabase
+                        .from('contacto')
+                        .insert({
+                            telefono: document.getElementById('telefono').value,
+                            email: document.getElementById('email').value,
+                            direccion: document.getElementById('direccion').value,
+                            ubicacion_gps: document.getElementById('ubicacionGPS').value,
+                            redes_sociales: redesSociales
+                        });
+                    
+                    if (error) {
+                        console.error('Error de Supabase:', error);
+                        throw error;
+                    }
+                }
+                
+                // Actualizar última modificación
+                const ahora = new Date();
+                document.getElementById('lastSaved').textContent = `Última actualización: ${ahora.toLocaleString()}`;
+                
+                mostrarNotificacion('Todos los cambios guardados correctamente', 'success');
+            } catch (error) {
+                console.error('Error guardando configuración:', error);
+                mostrarNotificacion('Error al guardar la configuración. Verifica la conexión.', 'error');
+            } finally {
+                mostrarCarga(false);
+            }
+        }
+        
+        function mostrarCarga(mostrar) {
+            const spinner = document.getElementById('loadingSpinner');
+            const btnGuardar = document.getElementById('btnGuardarTodo');
+            
+            if (mostrar) {
+                spinner.style.display = 'inline-block';
+                btnGuardar.disabled = true;
+                btnGuardar.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Guardando...';
+            } else {
+                spinner.style.display = 'none';
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="bi bi-check-circle me-2"></i>Guardar Cambios';
+            }
+        }
+        
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+            const toastMessage = document.getElementById('toastMessage');
+            const toastTime = document.getElementById('toastTime');
+            
+            toastMessage.textContent = mensaje;
+            toastTime.textContent = 'Ahora';
+            
+            // Establecer color según el tipo
+            const toastElement = document.getElementById('liveToast');
+            if (tipo === 'success') {
+                toastElement.classList.remove('bg-danger', 'text-bg-danger');
+                toastElement.classList.add('bg-success', 'text-bg-success');
+            } else if (tipo === 'error') {
+                toastElement.classList.remove('bg-success', 'text-bg-success');
+                toastElement.classList.add('bg-danger', 'text-bg-danger');
+            } else {
+                toastElement.classList.remove('bg-success', 'text-bg-success', 'bg-danger', 'text-bg-danger');
+            }
+            
+            toast.show();
+        }
+    </script>
+</body>
+</html>

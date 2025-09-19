@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Eventos Privados</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f77f00;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d1146a;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #3ab0d6;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+        }
+        
+        .progress-bar {
+            height: 5px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .config-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .config-info {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 1rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header style="display: flex;justify-content: center;text-align: center;align-items: center;padding: 10px;">
+        <div class="container">
+            <h1>Gestión de Eventos Privados</h1>
+        </div>
+
+        <a style="color: red;font-weight: bold  ;" href="ad.html">ATRAS</a>
+    </header>
+    
+    <div class="container">
+        <div class="config-section">
+            <h3>Configuración de Supabase Storage</h3>
+            <p>Asegúrate de haber creado el bucket <strong>'productos-imagenes'</strong> en Supabase Storage con las políticas adecuadas.</p>
+            <div class="config-info">
+                <p>✅ Bucket: <span id="bucketName">productos-imagenes</span></p>
+                <p>✅ Tamaño máximo: <span id="maxSize">2 MB</span></p>
+                <p>✅ Estado: <span id="bucketStatus">Configurado</span></p>
+            </div>
+        </div>
+        
+        <div id="alertContainer"></div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="list">Lista de Eventos</div>
+            <div class="tab" data-tab="create">Crear Evento</div>
+        </div>
+        
+        <div class="tab-content active" id="listTab">
+            <div class="card">
+                <h2>Eventos Existentes</h2>
+                <div class="table-responsive">
+                    <table id="eventsTable">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsList">
+                            <!-- Los eventos se cargarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="createTab">
+            <div class="card">
+                <h2 id="formTitle">Crear Nuevo Evento</h2>
+                <form id="eventForm">
+                    <input type="hidden" id="eventId">
+                    
+                    <div class="form-group">
+                        <label for="titulo">Título *</label>
+                        <input type="text" id="titulo" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <textarea id="descripcion" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fecha_inicio">Fecha Inicio</label>
+                        <input type="date" id="fecha_inicio">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fecha_fin">Fecha Fin</label>
+                        <input type="date" id="fecha_fin">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hora_inicio">Hora Inicio</label>
+                        <input type="time" id="hora_inicio">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hora_fin">Hora Fin</label>
+                        <input type="time" id="hora_fin">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="precio">Precio</label>
+                        <input type="number" id="precio" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="capacidad_maxima">Capacidad Máxima</label>
+                        <input type="number" id="capacidad_maxima">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="categoria_evento">Categoría</label>
+                        <input type="text" id="categoria_evento">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ubicacion">Ubicación</label>
+                        <input type="text" id="ubicacion">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contacto_telefono">Teléfono de Contacto</label>
+                        <input type="tel" id="contacto_telefono">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contacto_email">Email de Contacto</label>
+                        <input type="email" id="contacto_email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notas_adicionales">Notas Adicionales</label>
+                        <textarea id="notas_adicionales" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tipo_evento">Tipo de Evento</label>
+                        <input type="text" id="tipo_evento">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="estado">Estado</label>
+                        <select id="estado">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                            <option value="cancelado">Cancelado</option>
+                            <option value="completado">Completado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imagen">Imagen del Evento</label>
+                        <div class="upload-area" id="uploadArea">
+                            <p>Haga clic o arrastre una imagen aquí para subirla</p>
+                            <input type="file" id="imagen" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="uploadProgress"></div>
+                        </div>
+                        <img id="imagePreview" class="image-preview">
+                        <input type="hidden" id="imagen_url">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Guardar Evento</button>
+                        <button type="button" class="btn btn-danger" id="cancelButton">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para confirmar eliminación -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Confirmar Eliminación</h2>
+            <p>¿Está seguro de que desea eliminar este evento? Esta acción no se puede deshacer.</p>
+            <div class="form-group">
+                <button class="btn btn-danger" id="confirmDelete">Eliminar</button>
+                <button class="btn btn-primary" id="cancelDelete">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Supabase
+        const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Configuración de la aplicación
+        const CONFIGURACION = {
+            BUCKET_IMAGENES: 'productos-imagenes',
+            IMAGENES_HABILITADAS: true,
+            MAX_TAMAÑO_IMAGEN: 2 * 1024 * 1024 // 2MB máximo
+        };
+        
+
+          async function verificarConfiguracion() {
+            const resultContainer = document.getElementById('verificationResult');
+            resultContainer.innerHTML = '<div class="alert alert-info">Verificando configuración...</div>';
+            
+            try {
+                // Verificar si el bucket existe
+                const { data, error } = await supabase
+                    .storage
+                    .getBucket('productos-imagenes');
+                
+                if (error) {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-error">
+                            ❌ El bucket todavía no existe. Por favor, crea el bucket 'productos-imagenes' en Supabase Storage.
+                        </div>
+                    `;
+                } else {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            ✅ Bucket encontrado correctamente. Ahora verifica las políticas de seguridad.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        ❌ Error de conexión: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        // Variables globales
+        let events = [];
+        let eventToDelete = null;
+        let currentTab = 'list';
+        
+        // Elementos DOM
+        const eventsList = document.getElementById('eventsList');
+        const eventForm = document.getElementById('eventForm');
+        const formTitle = document.getElementById('formTitle');
+        const alertContainer = document.getElementById('alertContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const imagenUrlInput = document.getElementById('imagen_url');
+        const uploadArea = document.getElementById('uploadArea');
+        const imagenInput = document.getElementById('imagen');
+        const cancelButton = document.getElementById('cancelButton');
+        const deleteModal = document.getElementById('deleteModal');
+        const confirmDelete = document.getElementById('confirmDelete');
+        const cancelDelete = document.getElementById('cancelDelete');
+        const closeModal = document.querySelector('.close');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const uploadProgress = document.getElementById('uploadProgress');
+        
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar configuración
+            verificarConfiguracion();
+            
+            // Cargar eventos
+            loadEvents();
+            
+            // Configurar event listeners
+            setupEventListeners();
+        });
+        
+        // Verificar configuración de Supabase
+        // async function verificarConfiguracion() {
+        //     try {
+        //         // Verificar si el bucket existe
+        //         const { data, error } = await supabase
+        //             .storage
+        //             .getBucket(CONFIGURACION.BUCKET_IMAGENES);
+                
+        //         if (error) {
+        //             document.getElementById('bucketStatus').textContent = 'Error: Bucket no encontrado';
+        //             document.getElementById('bucketStatus').style.color = 'red';
+        //             showAlert('Error: El bucket de imágenes no existe en Supabase. Por favor, créalo manualmente.', 'error');
+        //             CONFIGURACION.IMAGENES_HABILITADAS = false;
+        //         } else {
+        //             document.getElementById('bucketStatus').textContent = 'Bucket encontrado';
+        //             document.getElementById('bucketStatus').style.color = 'green';
+        //             CONFIGURACION.IMAGENES_HABILITADAS = true;
+        //         }
+        //     } catch (error) {
+        //         console.error('Error verificando configuración:', error);
+        //         document.getElementById('bucketStatus').textContent = 'Error de conexión';
+        //         document.getElementById('bucketStatus').style.color = 'red';
+        //         CONFIGURACION.IMAGENES_HABILITADAS = false;
+        //     }
+        // }
+        
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Form submission
+            eventForm.addEventListener('submit', handleFormSubmit);
+            
+            // Image upload
+            uploadArea.addEventListener('click', () => imagenInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('drop', handleDrop);
+            imagenInput.addEventListener('change', handleImageSelect);
+            
+            // Cancel button
+            cancelButton.addEventListener('click', resetForm);
+            
+            // Delete modal
+            confirmDelete.addEventListener('click', deleteEvent);
+            cancelDelete.addEventListener('click', closeDeleteModal);
+            closeModal.addEventListener('click', closeDeleteModal);
+            
+            // Tabs
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            // Cerrar modal al hacer clic fuera
+            window.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    closeDeleteModal();
+                }
+            });
+        }
+        
+        // Cambiar entre pestañas
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Actualizar pestañas
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Actualizar contenido
+            tabContents.forEach(content => {
+                if (content.id === tabName + 'Tab') {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Cargar eventos desde la base de datos
+        async function loadEvents() {
+            try {
+                const { data, error } = await supabase
+                    .from('eventos_privados')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                events = data || [];
+                renderEvents();
+            } catch (error) {
+                showAlert('Error al cargar los eventos: ' + error.message, 'error');
+            }
+        }
+        
+        // Renderizar la lista de eventos
+        function renderEvents() {
+            eventsList.innerHTML = '';
+            
+            if (events.length === 0) {
+                eventsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay eventos registrados</td></tr>';
+                return;
+            }
+            
+            events.forEach(event => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${event.titulo}</td>
+                    <td>${formatDate(event.fecha_inicio)}</td>
+                    <td>${formatDate(event.fecha_fin)}</td>
+                    <td>${event.estado}</td>
+                    <td class="actions">
+                        <button class="btn btn-primary" onclick="editEvent(${event.id})">Editar</button>
+                        <button class="btn btn-danger" onclick="openDeleteModal(${event.id})">Eliminar</button>
+                    </td>
+                `;
+                
+                eventsList.appendChild(row);
+            });
+        }
+        
+        // Formatear fecha
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES');
+        }
+        
+        // Manejar envío del formulario
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                const eventId = document.getElementById('eventId').value;
+                const formData = getFormData();
+                
+                if (eventId) {
+                    // Actualizar evento existente
+                    const { error } = await supabase
+                        .from('eventos_privados')
+                        .update(formData)
+                        .eq('id', eventId);
+                    
+                    if (error) throw error;
+                    
+                    showAlert('Evento actualizado correctamente', 'success');
+                } else {
+                    // Crear nuevo evento
+                    const { error } = await supabase
+                        .from('eventos_privados')
+                        .insert([formData]);
+                    
+                    if (error) throw error;
+                    
+                    showAlert('Evento creado correctamente', 'success');
+                }
+                
+                resetForm();
+                loadEvents();
+                switchTab('list');
+            } catch (error) {
+                showAlert('Error al guardar el evento: ' + error.message, 'error');
+            }
+        }
+        
+        // Obtener datos del formulario
+        function getFormData() {
+            return {
+                titulo: document.getElementById('titulo').value,
+                descripcion: document.getElementById('descripcion').value,
+                fecha_inicio: document.getElementById('fecha_inicio').value || null,
+                fecha_fin: document.getElementById('fecha_fin').value || null,
+                hora_inicio: document.getElementById('hora_inicio').value || null,
+                hora_fin: document.getElementById('hora_fin').value || null,
+                precio: document.getElementById('precio').value ? parseFloat(document.getElementById('precio').value) : null,
+                imagen: imagenUrlInput.value,
+                capacidad_maxima: document.getElementById('capacidad_maxima').value ? parseInt(document.getElementById('capacidad_maxima').value) : null,
+                estado: document.getElementById('estado').value,
+                categoria_evento: document.getElementById('categoria_evento').value,
+                ubicacion: document.getElementById('ubicacion').value,
+                contacto_telefono: document.getElementById('contacto_telefono').value,
+                contacto_email: document.getElementById('contacto_email').value,
+                notas_adicionales: document.getElementById('notas_adicionales').value,
+                tipo_evento: document.getElementById('tipo_evento').value,
+                updated_at: new Date().toISOString()
+            };
+        }
+        
+        // Editar evento
+        async function editEvent(id) {
+            try {
+                const event = events.find(e => e.id === id);
+                
+                if (!event) {
+                    showAlert('Evento no encontrado', 'error');
+                    return;
+                }
+                
+                // Llenar el formulario con los datos del evento
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('titulo').value = event.titulo || '';
+                document.getElementById('descripcion').value = event.descripcion || '';
+                document.getElementById('fecha_inicio').value = event.fecha_inicio || '';
+                document.getElementById('fecha_fin').value = event.fecha_fin || '';
+                document.getElementById('hora_inicio').value = event.hora_inicio || '';
+                document.getElementById('hora_fin').value = event.hora_fin || '';
+                document.getElementById('precio').value = event.precio || '';
+                document.getElementById('capacidad_maxima').value = event.capacidad_maxima || '';
+                document.getElementById('categoria_evento').value = event.categoria_evento || '';
+                document.getElementById('ubicacion').value = event.ubicacion || '';
+                document.getElementById('contacto_telefono').value = event.contacto_telefono || '';
+                document.getElementById('contacto_email').value = event.contacto_email || '';
+                document.getElementById('notas_adicionales').value = event.notas_adicionales || '';
+                document.getElementById('tipo_evento').value = event.tipo_evento || '';
+                document.getElementById('estado').value = event.estado || 'activo';
+                
+                // Manejar la imagen
+                imagenUrlInput.value = event.imagen || '';
+                if (event.imagen) {
+                    imagePreview.src = event.imagen;
+                    imagePreview.style.display = 'block';
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+                
+                formTitle.textContent = 'Editar Evento';
+                switchTab('create');
+            } catch (error) {
+                showAlert('Error al cargar el evento: ' + error.message, 'error');
+            }
+        }
+        
+        // Abrir modal de eliminación
+        function openDeleteModal(id) {
+            eventToDelete = id;
+            deleteModal.style.display = 'block';
+        }
+        
+        // Cerrar modal de eliminación
+        function closeDeleteModal() {
+            deleteModal.style.display = 'none';
+            eventToDelete = null;
+        }
+        
+        // Eliminar evento
+        async function deleteEvent() {
+            if (!eventToDelete) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('eventos_privados')
+                    .delete()
+                    .eq('id', eventToDelete);
+                
+                if (error) throw error;
+                
+                showAlert('Evento eliminado correctamente', 'success');
+                closeDeleteModal();
+                loadEvents();
+            } catch (error) {
+                showAlert('Error al eliminar el evento: ' + error.message, 'error');
+            }
+        }
+        
+        // Resetear formulario
+        function resetForm() {
+            eventForm.reset();
+            document.getElementById('eventId').value = '';
+            imagePreview.style.display = 'none';
+            imagenUrlInput.value = '';
+            formTitle.textContent = 'Crear Nuevo Evento';
+            uploadProgress.style.width = '0%';
+        }
+        
+        // Manejar arrastre de imagen
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.style.borderColor = '#4361ee';
+        }
+        
+        // Manejar soltar imagen
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.style.borderColor = '#ddd';
+            
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                imagenInput.files = files;
+                handleImageSelect();
+            }
+        }
+        
+        // Manejar selección de imagen
+        function handleImageSelect() {
+            const file = imagenInput.files[0];
+            if (!file) return;
+            
+            // Validar tamaño de archivo
+            if (file.size > CONFIGURACION.MAX_TAMAÑO_IMAGEN) {
+                showAlert('El archivo es demasiado grande. El tamaño máximo permitido es 2MB.', 'error');
+                return;
+            }
+            
+            // Validar tipo de archivo
+            if (!file.type.startsWith('image/')) {
+                showAlert('Por favor, seleccione un archivo de imagen válido.', 'error');
+                return;
+            }
+            
+            // Mostrar previsualización
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Subir imagen a Supabase Storage si está habilitado
+            if (CONFIGURACION.IMAGENES_HABILITADAS) {
+                uploadImage(file);
+            } else {
+                showAlert('La subida de imágenes no está disponible en este momento.', 'error');
+            }
+        }
+        
+        // Subir imagen a Supabase Storage
+        async function uploadImage(file) {
+            try {
+                // Generar nombre único para la imagen
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                const filePath = `${fileName}`;
+                
+                // Mostrar progreso
+                uploadProgress.style.width = '0%';
+                
+                // Subir la imagen con seguimiento de progreso
+                const { error } = await supabase.storage
+                    .from(CONFIGURACION.BUCKET_IMAGENES)
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        onUploadProgress: (progress) => {
+                            const percentage = (progress.loaded / progress.total) * 100;
+                            uploadProgress.style.width = `${percentage}%`;
+                        }
+                    });
+                
+                if (error) {
+                    if (error.message.includes('bucket')) {
+                        showAlert('Error: El bucket de imágenes no está configurado correctamente.', 'error');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                // Obtener URL pública de la imagen
+                const { data: { publicUrl } } = supabase.storage
+                    .from(CONFIGURACION.BUCKET_IMAGENES)
+                    .getPublicUrl(filePath);
+                
+                // Guardar la URL en el campo oculto
+                imagenUrlInput.value = publicUrl;
+                
+                showAlert('Imagen subida correctamente', 'success');
+            } catch (error) {
+                console.error('Error subiendo imagen:', error);
+                showAlert('Error al subir la imagen: ' + error.message, 'error');
+            }
+        }
+        
+        // Mostrar alerta
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertContainer.appendChild(alert);
+            
+            // Auto-eliminar la alerta después de 5 segundos
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        // Hacer funciones globales para los eventos onclick
+        window.editEvent = editEvent;
+        window.openDeleteModal = openDeleteModal;
+    </script>
+</body>
+</html>
