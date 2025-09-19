@@ -1677,7 +1677,7 @@
         ${variantes.map(v => `
           <div class="variante-item">
             <strong>${v.nombre_variante}</strong>
-            <p>${v.descripcion_variante || 'Sin descripción'}</p>
+            <p>${v.descripcion_variante || ''}</p>
             <p><strong>Precio:</strong> $${parseFloat(v.precio).toLocaleString()}</p>
           </div>
         `).join('')}
@@ -1704,7 +1704,7 @@
           ${navegacionHTML}
         </div>
         <div class="producto-detalle">
-          <p class="producto-descripcion">${producto.descripcion || 'Sin descripción'}</p>
+          <p class="producto-descripcion">${producto.descripcion || ''}</p>
           <p class="producto-precio">Precio base: <strong>$${producto.precio ? producto.precio.toLocaleString() : '0'}</strong></p>
           ${variantesHTML}
         </div>
