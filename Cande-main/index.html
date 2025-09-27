@@ -1758,76 +1758,165 @@
                 return;
             }
 
-            // Imágenes de variantes con imagen válida
-            const imagenesVariantes = variantes.filter(v => v.imagen);
+            // Organizar precios de mayor a menor
+            const opcionesPrecios = [];
 
-            // Fallbacks de imagen
-            const imagenPorDefecto = "https://via.placeholder.com/300x200?text=Sin+imagen";
-            const imagenesHTML = imagenesVariantes.length > 0
-                ? imagenesVariantes.map((v, i) => `
-        <img src="${v.imagen}" class="galeria-img ${i === 0 ? 'active' : ''}" data-index="${i}">
-      `).join('')
-                : (producto.imagen
-                    ? `<img src="${producto.imagen}" class="galeria-img active">`
-                    : `<img src="${imagenPorDefecto}" class="galeria-img active">`);
+            // Agregar precio base
+            if (producto.precio && producto.precio > 0) {
+                opcionesPrecios.push({
+                    nombre: 'Tamaño Regular',
+                    descripcion: producto.descripcion || '',
+                    precio: producto.precio,
+                    tipo: 'base',
+                    imagen: producto.imagen
+                });
+            }
 
-            // Navegación de galería si hay más de una imagen
-            const navegacionHTML = imagenesVariantes.length > 1
+            // Agregar variantes
+            if (variantes && variantes.length > 0) {
+                variantes.forEach(variante => {
+                    if (variante.precio && variante.precio > 0) {
+                        opcionesPrecios.push({
+                            nombre: variante.nombre_variante,
+                            descripcion: variante.descripcion_variante || '',
+                            precio: parseFloat(variante.precio),
+                            tipo: 'variante',
+                            imagen: variante.imagen || producto.imagen
+                        });
+                    }
+                });
+            }
+
+            // Ordenar de mayor a menor precio
+            opcionesPrecios.sort((a, b) => b.precio - a.precio);
+
+            // Crear galería de imágenes únicas
+            const imagenesUnicas = [...new Set([
+                producto.imagen,
+                ...variantes.filter(v => v.imagen).map(v => v.imagen)
+            ])].filter(Boolean);
+
+            const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
+
+            // HTML de la galería
+            const galeriaHTML = imagenesUnicas.length > 0
+                ? imagenesUnicas.map((img, i) => `
+            <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
+                 data-index="${i}" alt="${producto.nombre}">
+          `).join('')
+                : `<img src="${imagenPorDefecto}" class="galeria-img active" alt="${producto.nombre}">`;
+
+            // Navegación de galería
+            const navegacionHTML = imagenesUnicas.length > 1
                 ? `
-      <div class="galeria-nav">
-        ${imagenesVariantes.map((v, i) => `
-          <span class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></span>
-        `).join('')}
-      </div>
-    `
-                : '';
-
-            // Detalles de variantes
-            const variantesHTML = variantes.length > 0
-                ? `
-      <div class="producto-variantes">
-        <h4>Variantes disponibles:</h4>
-        ${variantes.map(v => `
-          <div class="variante-item">
-            <strong>${v.nombre_variante}</strong>
-            <p>${v.descripcion_variante || ''}</p>
-            <p><strong>Precio:</strong> $${parseFloat(v.precio).toLocaleString()}</p>
+          <div class="galeria-nav">
+            ${imagenesUnicas.map((img, i) => `
+              <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}">
+                <img src="${img}" alt="Vista ${i + 1}">
+              </div>
+            `).join('')}
           </div>
-        `).join('')}
-      </div>
-    `
+        `
                 : '';
 
-            // Crear el modal
+            // HTML de opciones de precios
+            const opcionesPreciosHTML = opcionesPrecios.length > 0
+                ? `
+          <div class="opciones-precios">
+            <h4><i class="fas fa-tags"></i> Opciones disponibles</h4>
+            <div class="precios-grid">
+              ${opcionesPrecios.map((opcion, index) => `
+                <div class="precio-card ${index === 0 ? 'precio-destacado' : ''}">
+                  <div class="precio-header">
+                    <h5>${opcion.nombre}</h5>
+                    ${index === 0 ? '<span class="badge-premium">Más popular</span>' : ''}
+                  </div>
+                  ${opcion.descripcion ? `<p class="precio-descripcion">${opcion.descripcion}</p>` : ''}
+                  <div class="precio-valor">
+                    <span class="precio-signo">$</span>
+                    <span class="precio-numero">${opcion.precio.toLocaleString('es-CL')}</span>
+                  </div>
+                  ${opcion.tipo === 'base' ? '<span class="precio-tipo">Precio base</span>' : '<span class="precio-tipo">Variante</span>'}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `
+                : `<div class="sin-precios"><i class="fas fa-info-circle"></i> Consultar precio en tienda</div>`;
+
+            // Crear el modal con diseño mejorado
             const modal = document.createElement('div');
-            modal.className = 'modal-backdrop';
+            modal.className = 'modal-backdrop-elegante';
             modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
+                if (e.target === modal) cerrarModalElegante(modal);
             };
 
             modal.innerHTML = `
-    <div class="modal-content-producto">
-      <div class="modal-header">
-        <h2>${producto.nombre}</h2>
-        <button class="close-btn" onclick="this.closest('.modal-backdrop').remove()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="galeria-container">
-          ${imagenesHTML}
-          ${navegacionHTML}
+      <div class="modal-producto-elegante">
+        <div class="modal-header-elegante">
+          <div class="producto-titulo">
+            <h2>${producto.nombre}</h2>
+            ${producto.tipo ? `<span class="producto-categoria">${producto.tipo}</span>` : ''}
+          </div>
+          <button class="close-btn-elegante" onclick="cerrarModalElegante(this.closest('.modal-backdrop-elegante'))">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="producto-detalle">
-          <p class="producto-descripcion">${producto.descripcion || ''}</p>
-          <p class="producto-precio">Precio base: <strong>$${producto.precio ? producto.precio.toLocaleString() : '0'}</strong></p>
-          ${variantesHTML}
+        
+        <div class="modal-body-elegante">
+          <div class="galeria-section">
+            <div class="galeria-principal">
+              ${galeriaHTML}
+            </div>
+            ${navegacionHTML}
+          </div>
+          
+          <div class="info-section">
+            ${producto.descripcion ? `
+              <div class="descripcion-producto">
+                <h4><i class="fas fa-info-circle"></i> Descripción</h4>
+                <p>${producto.descripcion}</p>
+              </div>
+            ` : ''}
+            
+            ${opcionesPreciosHTML}
+            
+            <div class="acciones-producto">
+              <button class="btn-whatsapp" onclick="consultarWhatsApp('${producto.nombre}')">
+                <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+              </button>
+              <button class="btn-compartir" onclick="compartirProducto('${producto.nombre}')">
+                <i class="fas fa-share-alt"></i> Compartir
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
             document.body.appendChild(modal);
 
-            // Galería navegación
+            // Animar entrada del modal
+            setTimeout(() => {
+                modal.classList.add('modal-active');
+            }, 10);
+
+            // Configurar navegación de galería
+            configurarGaleriaElegante(modal);
+        }
+
+
+        function cerrarModalElegante(modal) {
+            if (!modal) return;
+            modal.classList.remove('modal-active');
+            setTimeout(() => {
+                modal.remove();
+            }, 300); // Duración de la animación
+        }
+
+
+        // Configurar navegación de galería mejorada
+        function configurarGaleriaElegante(modal) {
             const dots = modal.querySelectorAll('.galeria-dot');
             const imagenes = modal.querySelectorAll('.galeria-img');
 
@@ -1842,6 +1931,374 @@
                     imagenes[index].classList.add('active');
                 });
             });
+
+            // Navegación con teclado
+            modal.addEventListener('keydown', (e) => {
+                const activeIndex = [...dots].findIndex(dot => dot.classList.contains('active'));
+
+                if (e.key === 'ArrowLeft' && activeIndex > 0) {
+                    dots[activeIndex - 1].click();
+                } else if (e.key === 'ArrowRight' && activeIndex < dots.length - 1) {
+                    dots[activeIndex + 1].click();
+                } else if (e.key === 'Escape') {
+                    cerrarModalElegante(modal);
+                }
+            });
+
+            modal.focus();
+        }
+        function consultarWhatsApp(nombreProducto) {
+            const mensaje = `Hola! Me interesa el producto: ${nombreProducto}. ¿Podrían darme más información?`;
+            const numeroWhatsApp = contactoInfo?.telefono?.replace(/[^\d]/g, '') || '';
+
+            if (numeroWhatsApp) {
+                const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
+            } else {
+                // Fallback si no hay número configurado
+                const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
+            }
+        }
+
+        // Función para compartir producto
+        function compartirProducto(nombreProducto) {
+            const texto = `¡Mira este producto de ${brandingData?.nombre_negocio || 'nuestra tienda'}: ${nombreProducto}!`;
+            const url = window.location.href;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: nombreProducto,
+                    text: texto,
+                    url: url
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                // Fallback a WhatsApp
+                const mensaje = `${texto} ${url}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
+            }
+        }
+
+        // CSS adicional para el diseño elegante (agregar al head o archivo CSS)
+        const estilosElegantes = `
+<style>
+.modal-backdrop-elegante {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+.modal-backdrop-elegante.modal-active {
+    opacity: 1;
+}
+
+.modal-backdrop-elegante.modal-saliendo {
+    opacity: 0;
+}
+
+.modal-producto-elegante {
+    background: white;
+    border-radius: 20px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9) translateY(30px);
+    transition: transform 0.3s ease;
+}
+
+.modal-active .modal-producto-elegante {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header-elegante {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px;
+    background: linear-gradient(135deg, var(--color-principal, #ff6b6b), var(--color-secundario, #4ecdc4));
+    color: white;
+}
+
+.producto-titulo h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.producto-categoria {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.close-btn-elegante {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.close-btn-elegante:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-body-elegante {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 30px;
+    max-height: calc(90vh - 100px);
+    overflow-y: auto;
+}
+
+.galeria-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.galeria-principal {
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+}
+
+.galeria-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.galeria-img.active {
+    opacity: 1;
+}
+
+.galeria-nav {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.galeria-dot {
+    width: 60px;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.galeria-dot.active {
+    border-color: var(--color-principal, #ff6b6b);
+}
+
+.galeria-dot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.descripcion-producto h4,
+.opciones-precios h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 15px 0;
+    color: var(--color-principal, #333);
+    font-size: 16px;
+}
+
+.precios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.precio-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.precio-card:hover {
+    border-color: var(--color-principal, #ff6b6b);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.precio-destacado {
+    border-color: var(--color-principal, #ff6b6b);
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+}
+
+.precio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.precio-header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.badge-premium {
+    background: var(--color-principal, #ff6b6b);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.precio-descripcion {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 15px 0;
+    line-height: 1.4;
+}
+
+.precio-valor {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.precio-signo {
+    font-size: 16px;
+    color: var(--color-principal, #ff6b6b);
+    font-weight: 600;
+}
+
+.precio-numero {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-principal, #ff6b6b);
+}
+
+.precio-tipo {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.acciones-producto {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-whatsapp,
+.btn-compartir {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-whatsapp {
+    background: #25D366;
+    color: white;
+}
+
+.btn-whatsapp:hover {
+    background: #128C7E;
+    transform: translateY(-1px);
+}
+
+.btn-compartir {
+    background: #f8f9fa;
+    color: var(--color-principal, #ff6b6b);
+    border: 2px solid var(--color-principal, #ff6b6b);
+}
+
+.btn-compartir:hover {
+    background: var(--color-principal, #ff6b6b);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.sin-precios {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-body-elegante {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+    
+    .modal-producto-elegante {
+        margin: 10px;
+        border-radius: 15px;
+    }
+    
+    .modal-header-elegante {
+        padding: 20px;
+    }
+    
+    .producto-titulo h2 {
+        font-size: 20px;
+    }
+}
+</style>
+`;
+
+        // Inyectar estilos si no existen
+        if (!document.getElementById('estilos-modal-elegante')) {
+            const styleElement = document.createElement('style');
+            styleElement.id = 'estilos-modal-elegante';
+            styleElement.innerHTML = estilosElegantes.replace(/<\/?style>/g, '');
+            document.head.appendChild(styleElement);
         }
 
         function mostrarModalContacto() {
