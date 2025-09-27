@@ -61,7 +61,6 @@
         }
 
         .perfil-info {
-            /* margin-top: 60px; */
             padding: 60px 20px 20px;
             background: white;
             display: flex;
@@ -132,7 +131,6 @@
             gap: 10px;
             margin-top: 10px;
         }
-
 
         /* MENÚ HAMBURGUESA */
         .menu-btn {
@@ -286,7 +284,6 @@
         .cate {
             white-space: nowrap;
             padding: 10px 8px;
-            /* border-radius: 25px; */
             background-color: #f0f0f0;
             cursor: pointer;
             transition: 0.3s;
@@ -328,12 +325,9 @@
             gap: 15px;
         }
 
-
         .producto {
-            /* background: white; */
             border-radius: 10px;
             overflow: hidden;
-            /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             cursor: pointer;
             display: flex;
@@ -396,8 +390,6 @@
             margin-bottom: 5px;
             line-height: 1.5;
             flex-grow: 1;
-
-            /* Estilos para acortar texto con puntos suspensivos */
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
@@ -440,8 +432,6 @@
             font-size: 1.2rem;
             color: #7f8c8d;
         }
-
-
 
         /* EVENTOS */
         .evento-card {
@@ -632,9 +622,6 @@
             }
         }
 
-
-
-        /* ---------------------------------------------------------------------------------------- */
         .modal-backdrop {
             position: fixed;
             top: 0;
@@ -758,13 +745,6 @@
             background: #f9f9f9;
         }
 
-
-
-
-
-
-
-
         .share-btn {
             display: inline-flex;
             align-items: center;
@@ -776,17 +756,10 @@
             margin: 5px;
         }
 
-        /* .share-instagram {
-            background: #E1306C;
-        } */
-
         .share-instagram i {
             color: white;
             font-size: 20px;
         }
-
-
-
 
         .sin-eventos {
             text-align: center;
@@ -799,8 +772,6 @@
             color: var(--color-principal);
             animation: pulse 1.5s infinite;
         }
-
-
 
         .share-btn:hover {
             transform: scale(1.1);
@@ -1438,8 +1409,7 @@
             });
         }
 
-        // Función para mostrar productos
-        // Función mejorada para mostrar productos con precio máximo
+        // Función para mostrar productos con precio máximo
         async function mostrarProductos() {
             const container = document.getElementById('productosContainer');
 
@@ -1522,8 +1492,6 @@
     `).join('');
         }
 
-
-
         // Nueva función para obtener el precio máximo de un producto
         async function obtenerPrecioMaximo(producto) {
             try {
@@ -1572,57 +1540,6 @@
             }
         }
 
-
-
-        // Función auxiliar para obtener información de precios de un producto
-        async function obtenerInformacionPrecios(productoId) {
-            try {
-                const { data: variantes, error } = await supabase
-                    .from('producto_variantes')
-                    .select('precio, nombre_variante')
-                    .eq('producto_id', productoId);
-
-                if (error) {
-                    console.error('Error obteniendo información de precios:', error);
-                    return null;
-                }
-
-                const producto = productos.find(p => p.id === productoId);
-                if (!producto) return null;
-
-                const precios = [];
-
-                // Agregar precio base
-                if (producto.precio && producto.precio > 0) {
-                    precios.push({
-                        nombre: 'Precio base',
-                        precio: producto.precio
-                    });
-                }
-
-                // Agregar precios de variantes
-                if (variantes && variantes.length > 0) {
-                    variantes.forEach(variante => {
-                        if (variante.precio && variante.precio > 0) {
-                            precios.push({
-                                nombre: variante.nombre_variante,
-                                precio: parseFloat(variante.precio)
-                            });
-                        }
-                    });
-                }
-
-                return {
-                    precioMinimo: precios.length > 0 ? Math.min(...precios.map(p => p.precio)) : 0,
-                    precioMaximo: precios.length > 0 ? Math.max(...precios.map(p => p.precio)) : 0,
-                    detallesPrecios: precios
-                };
-
-            } catch (error) {
-                console.error('Error obteniendo información de precios:', error);
-                return null;
-            }
-        }
         function mostrarProductosDefault() {
             const container = document.getElementById('productosContainer');
             container.innerHTML = `
@@ -1704,6 +1621,7 @@
         </div>
       `}).join('');
         }
+
         function mostrarEventosDefault() {
             const container = document.getElementById('eventosContainer');
             const categoriasMenu = document.getElementById('categoriaEventosMenu');
@@ -1742,214 +1660,324 @@
             });
         }
 
-    async function mostrarDetalleProducto(productoId) {
-    const producto = productos.find(p => p.id === productoId);
-    if (!producto) return;
+        // Función para mostrar detalle del producto
+        // Función para mostrar detalle del producto (MODIFICADA)
+        async function mostrarDetalleProducto(productoId) {
+            const producto = productos.find(p => p.id === productoId);
+            if (!producto) return;
 
-    // Consultar variantes desde Supabase
-    const { data: variantes, error } = await supabase
-        .from('producto_variantes')
-        .select('*')
-        .eq('producto_id', productoId)
-        .order('orden', { ascending: true });
+            // Consultar variantes desde Supabase
+            const { data: variantes, error } = await supabase
+                .from('producto_variantes')
+                .select('*')
+                .eq('producto_id', productoId)
+                .order('orden', { ascending: true });
 
-    if (error) {
-        console.error('Error obteniendo variantes:', error);
-        return;
-    }
+            if (error) {
+                console.error('Error obteniendo variantes:', error);
+                return;
+            }
 
-    // Organizar precios de mayor a menor
-    const opcionesPrecios = [];
+            // Solo agregar variantes, no el precio base
+            const opcionesPrecios = [];
 
-    // Agregar precio base
-    if (producto.precio && producto.precio > 0) {
-        opcionesPrecios.push({
-            nombre: 'Precio base',
-            descripcion: producto.descripcion || '',
-            precio: producto.precio,
-            tipo: 'base',
-            imagen: producto.imagen
-        });
-    }
-
-    // Agregar variantes
-    if (variantes && variantes.length > 0) {
-        variantes.forEach(variante => {
-            if (variante.precio && variante.precio > 0) {
-                opcionesPrecios.push({
-                    nombre: variante.nombre_variante,
-                    descripcion: variante.descripcion_variante || '',
-                    precio: parseFloat(variante.precio),
-                    tipo: 'variante',
-                    imagen: variante.imagen || producto.imagen
+            // Agregar solo variantes
+            if (variantes && variantes.length > 0) {
+                variantes.forEach(variante => {
+                    if (variante.precio && variante.precio > 0) {
+                        opcionesPrecios.push({
+                            nombre: variante.nombre_variante,
+                            descripcion: variante.descripcion_variante || '',
+                            precio: parseFloat(variante.precio),
+                            tipo: 'variante',
+                            imagen: variante.imagen || producto.imagen
+                        });
+                    }
                 });
             }
-        });
-    }
 
-    // Ordenar de mayor a menor precio
-    opcionesPrecios.sort((a, b) => b.precio - a.precio);
+            // Ordenar de mayor a menor precio
+            opcionesPrecios.sort((a, b) => b.precio - a.precio);
 
-    // Crear galería de imágenes únicas
-    const imagenesUnicas = [...new Set([
-        producto.imagen,
-        ...variantes.filter(v => v.imagen).map(v => v.imagen)
-    ])].filter(Boolean);
+            // Crear galería de imágenes únicas
+            const imagenesUnicas = [...new Set([
+                producto.imagen,
+                ...variantes.filter(v => v.imagen).map(v => v.imagen)
+            ])].filter(Boolean);
 
-    const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
+            const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
 
-    // HTML de la galería con funcionalidad para ampliar
-    const galeriaHTML = imagenesUnicas.length > 0
-        ? imagenesUnicas.map((img, i) => `
-        <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
-             data-index="${i}" alt="${producto.nombre}" 
-             onclick="ampliarImagen('${img}', '${producto.nombre}')" 
-             style="cursor: pointer;">
-      `).join('')
-        : `<img src="${imagenPorDefecto}" class="galeria-img active" alt="${producto.nombre}" 
-               onclick="ampliarImagen('${imagenPorDefecto}', '${producto.nombre}')" 
-               style="cursor: pointer;">`;
+            // HTML de la galería (MODIFICADO)
+            const galeriaHTML = imagenesUnicas.length > 0
+                ? imagenesUnicas.map((img, i) => `
+            <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
+                 alt="${producto.nombre}" onclick="abrirFullscreenGaleria(${i})">
+        `).join('')
+                : `<img src="${imagenPorDefecto}" class="galeria-img active" 
+                alt="${producto.nombre}" onclick="abrirFullscreenGaleria(0)">`;
 
-    // Navegación de galería
-    const navegacionHTML = imagenesUnicas.length > 1
-        ? `
-      <div class="galeria-nav">
-        ${imagenesUnicas.map((img, i) => `
-          <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}">
-            <img src="${img}" alt="Vista ${i + 1}">
-          </div>
-        `).join('')}
-      </div>
-    `
-        : '';
-
-    // HTML de opciones de precios
-    const opcionesPreciosHTML = opcionesPrecios.length > 0
-        ? `
-      <div class="opciones-precios">
-        <h4><i class="fas fa-tags"></i> Opciones disponibles</h4>
-        <div class="precios-grid">
-          ${opcionesPrecios.map((opcion, index) => `
-            <div class="precio-card ${index === 0 ? 'precio-destacado' : ''}">
-              <div class="precio-header">
-                <h5>${opcion.nombre}</h5>
-                ${index === 0 ? '<span class="badge-premium">Más popular</span>' : ''}
-              </div>
-              ${opcion.descripcion ? `<p class="precio-descripcion">${opcion.descripcion}</p>` : ''}
-              <div class="precio-valor">
-                <span class="precio-signo">$</span>
-                <span class="precio-numero">${opcion.precio.toLocaleString('es-CL')}</span>
-              </div>
-              ${opcion.tipo === 'base' ? '<span class="precio-tipo">Precio base</span>' : '<span class="precio-tipo">Variante</span>'}
+            // Navegación de galería
+            const navegacionHTML = imagenesUnicas.length > 1
+                ? `
+            <div class="galeria-nav">
+                ${imagenesUnicas.map((img, i) => `
+                    <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}" onclick="cambiarImagenGaleria(${i})"></div>
+                `).join('')}
             </div>
-          `).join('')}
+        `
+                : '';
+
+            // HTML de opciones de precios (solo variantes)
+            const opcionesPreciosHTML = opcionesPrecios.length > 0
+                ? `
+            <div class="producto-variantes">
+                <h4>Opciones disponibles</h4>
+                ${opcionesPrecios.map(opcion => `
+                    <div class="variante-item">
+                        <div><strong>${opcion.nombre}</strong></div>
+                        ${opcion.descripcion ? `<div>${opcion.descripcion}</div>` : ''}
+                        <div class="producto-precio">$${opcion.precio.toLocaleString('es-CL')}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `
+                : `<p>Consultar precio en tienda</p>`;
+
+            // Crear el modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+
+            modal.innerHTML = `
+        <div class="modal-content-producto">
+            <div class="modal-header">
+                <h2>${producto.nombre}</h2>
+                <button class="close-btn" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="galeria-container">
+                    ${galeriaHTML}
+                    ${navegacionHTML}
+                </div>
+                <div class="producto-detalle">
+                    ${producto.descripcion ? `<p class="producto-descripcion">${producto.descripcion}</p>` : ''}
+                    ${opcionesPreciosHTML}
+                    <div style="margin-top: 20px;">
+                        <button class="btn-pdf" onclick="consultarWhatsApp('${producto.nombre}')">
+                            <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    `
-        : `<div class="sin-precios"><i class="fas fa-info-circle"></i> Consultar precio en tienda</div>`;
+    `;
 
-    // Crear el modal con diseño mejorado
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop-elegante';
-    modal.onclick = (e) => {
-        if (e.target === modal) cerrarModalElegante(modal);
-    };
+            document.body.appendChild(modal);
 
-    modal.innerHTML = `
-  <div class="modal-producto-elegante">
-    <div class="modal-header-elegante">
-      <div class="producto-titulo">
-        <h2>${producto.nombre}</h2>
-        ${producto.tipo ? `<span class="producto-categoria">${producto.tipo}</span>` : ''}
-      </div>
-      <button class="close-btn-elegante" onclick="cerrarModalElegante(this.closest('.modal-backdrop-elegante'))">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <div class="modal-body-elegante">
-      <div class="galeria-section">
-        <div class="galeria-principal">
-          ${galeriaHTML}
-        </div>
-        ${navegacionHTML}
-      </div>
-      
-      <div class="info-section">
-        ${producto.descripcion ? `
-          <div class="descripcion-producto">
-            <h4><i class="fas fa-info-circle"></i> Descripción</h4>
-            <p>${producto.descripcion}</p>
-          </div>
-        ` : ''}
-        
-        ${opcionesPreciosHTML}
-        
-        <div class="acciones-producto">
-          <button class="btn-whatsapp" onclick="consultarWhatsApp('${producto.nombre}')">
-            <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
-          </button>
-          <button class="btn-compartir" onclick="compartirProducto('${producto.nombre}')">
-            <i class="fas fa-share-alt"></i> Compartir
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-`;
+            // Guardar las imágenes en una variable global para el fullscreen
+            window.currentProductImages = imagenesUnicas.length > 0 ? imagenesUnicas : [imagenPorDefecto];
+            window.currentProductName = producto.nombre;
 
-    document.body.appendChild(modal);
+            // Configurar navegación de galería
+            if (imagenesUnicas.length > 1) {
+                const dots = modal.querySelectorAll('.galeria-dot');
+                const images = modal.querySelectorAll('.galeria-img');
 
-    // Animar entrada del modal
-    setTimeout(() => {
-        modal.classList.add('modal-active');
-    }, 10);
-
-    // Configurar navegación de galería
-    configurarGaleriaElegante(modal);
-}
-
-        function cerrarModalElegante(modal) {
-            if (!modal) return;
-            modal.classList.remove('modal-active');
-            setTimeout(() => {
-                modal.remove();
-            }, 300); // Duración de la animación
+                dots.forEach((dot, index) => {
+                    dot.addEventListener('click', () => {
+                        cambiarImagenGaleria(index);
+                    });
+                });
+            }
         }
 
+        // NUEVAS FUNCIONES PARA FULLSCREEN
+        function abrirFullscreenGaleria(indiceInicial = 0) {
+            const imagenes = window.currentProductImages || [];
+            const nombreProducto = window.currentProductName || 'Producto';
 
-        // Configurar navegación de galería mejorada
-        function configurarGaleriaElegante(modal) {
-            const dots = modal.querySelectorAll('.galeria-dot');
-            const imagenes = modal.querySelectorAll('.galeria-img');
+            if (imagenes.length === 0) return;
 
-            dots.forEach(dot => {
-                dot.addEventListener('click', () => {
-                    const index = parseInt(dot.dataset.index);
+            // Crear modal fullscreen
+            const fullscreenModal = document.createElement('div');
+            fullscreenModal.className = 'fullscreen-modal';
+            fullscreenModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    `;
 
-                    dots.forEach(d => d.classList.remove('active'));
-                    imagenes.forEach(img => img.classList.remove('active'));
+            // Contenido del carrusel fullscreen
+            fullscreenModal.innerHTML = `
+        <div class="fullscreen-header" style="position: absolute; top: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; color: white; z-index: 10001;">
+            <div class="image-counter" style="font-size: 16px;">
+                ${indiceInicial + 1} / ${imagenes.length}
+            </div>
+            <button class="close-fullscreen" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">
+                &times;
+            </button>
+        </div>
+        
+        <div class="fullscreen-content" style="position: relative; width: 90%; height: 80%; display: flex; justify-content: center; align-items: center;">
+            ${imagenes.map((img, index) => `
+                <img src="${img}" 
+                     class="fullscreen-image ${index === indiceInicial ? 'active' : ''}" 
+                     alt="${nombreProducto}"
+                     style="max-width: 100%; max-height: 100%; object-fit: contain; display: ${index === indiceInicial ? 'block' : 'none'};">
+            `).join('')}
+            
+            ${imagenes.length > 1 ? `
+                <button class="nav-btn prev-btn" onclick="navigateFullscreen(-1)" 
+                        style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; color: white; font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
+                    &#10094;
+                </button>
+                <button class="nav-btn next-btn" onclick="navigateFullscreen(1)" 
+                        style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; color: white; font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
+                    &#10095;
+                </button>
+            ` : ''}
+        </div>
+        
+        <div class="fullscreen-thumbnails" style="position: absolute; bottom: 20px; display: flex; gap: 10px; max-width: 90%; overflow-x: auto; padding: 10px;">
+            ${imagenes.map((img, index) => `
+                <img src="${img}" 
+                     class="thumbnail ${index === indiceInicial ? 'active' : ''}" 
+                     alt="Thumbnail ${index + 1}"
+                     onclick="goToFullscreenImage(${index})"
+                     style="width: 60px; height: 60px; object-fit: cover; cursor: pointer; border: 2px solid ${index === indiceInicial ? '#fff' : 'transparent'}; border-radius: 5px;">
+            `).join('')}
+        </div>
+    `;
 
-                    dot.classList.add('active');
-                    imagenes[index].classList.add('active');
-                });
+            document.body.appendChild(fullscreenModal);
+
+            // Configurar eventos
+            const closeBtn = fullscreenModal.querySelector('.close-fullscreen');
+            closeBtn.addEventListener('click', () => {
+                fullscreenModal.remove();
             });
 
-            // Navegación con teclado
-            modal.addEventListener('keydown', (e) => {
-                const activeIndex = [...dots].findIndex(dot => dot.classList.contains('active'));
+            // Cerrar con ESC
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    fullscreenModal.remove();
+                    document.removeEventListener('keydown', handleKeydown);
+                } else if (e.key === 'ArrowLeft') {
+                    navigateFullscreen(-1);
+                } else if (e.key === 'ArrowRight') {
+                    navigateFullscreen(1);
+                }
+            };
 
-                if (e.key === 'ArrowLeft' && activeIndex > 0) {
-                    dots[activeIndex - 1].click();
-                } else if (e.key === 'ArrowRight' && activeIndex < dots.length - 1) {
-                    dots[activeIndex + 1].click();
-                } else if (e.key === 'Escape') {
-                    cerrarModalElegante(modal);
+            document.addEventListener('keydown', handleKeydown);
+
+            // Cerrar al hacer click fuera de la imagen
+            fullscreenModal.addEventListener('click', (e) => {
+                if (e.target === fullscreenModal) {
+                    fullscreenModal.remove();
+                    document.removeEventListener('keydown', handleKeydown);
                 }
             });
 
-            modal.focus();
+            // Guardar estado actual
+            window.currentFullscreenIndex = indiceInicial;
+            window.fullscreenModal = fullscreenModal;
         }
+
+        // Función para navegar en el fullscreen
+        function navigateFullscreen(direction) {
+            const images = window.currentProductImages || [];
+            if (images.length <= 1) return;
+
+            let newIndex = window.currentFullscreenIndex + direction;
+
+            if (newIndex < 0) {
+                newIndex = images.length - 1;
+            } else if (newIndex >= images.length) {
+                newIndex = 0;
+            }
+
+            goToFullscreenImage(newIndex);
+        }
+
+        // Función para ir a una imagen específica
+        function goToFullscreenImage(index) {
+            const images = window.currentProductImages || [];
+            if (index < 0 || index >= images.length) return;
+
+            // Ocultar imagen actual
+            const currentImage = document.querySelector('.fullscreen-image.active');
+            if (currentImage) {
+                currentImage.classList.remove('active');
+                currentImage.style.display = 'none';
+            }
+
+            // Mostrar nueva imagen
+            const newImage = document.querySelectorAll('.fullscreen-image')[index];
+            if (newImage) {
+                newImage.classList.add('active');
+                newImage.style.display = 'block';
+            }
+
+            // Actualizar contador
+            const counter = document.querySelector('.image-counter');
+            if (counter) {
+                counter.textContent = `${index + 1} / ${images.length}`;
+            }
+
+            // Actualizar thumbnails
+            document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+                thumb.classList.toggle('active', i === index);
+                thumb.style.borderColor = i === index ? '#fff' : 'transparent';
+            });
+
+            window.currentFullscreenIndex = index;
+        }
+
+        // Función auxiliar para cambiar imagen en galería normal (MODIFICADA)
+        function cambiarImagenGaleria(indice) {
+            const modal = document.querySelector('.modal-backdrop');
+            if (!modal) return;
+
+            const images = modal.querySelectorAll('.galeria-img');
+            const dots = modal.querySelectorAll('.galeria-dot');
+
+            // Remover active de todas las imágenes y dots
+            images.forEach(img => img.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+
+            // Activar la imagen y dot correspondiente
+            if (images[indice]) images[indice].classList.add('active');
+            if (dots[indice]) dots[indice].classList.add('active');
+        }
+
+        // Función auxiliar para cambiar imagen en galería
+        function cambiarImagenGaleria(indice) {
+            const modal = document.querySelector('.modal-backdrop');
+            if (!modal) return;
+
+            const images = modal.querySelectorAll('.galeria-img');
+            const dots = modal.querySelectorAll('.galeria-dot');
+
+            // Remover active de todas las imágenes y dots
+            images.forEach(img => img.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+
+            // Activar la imagen y dot correspondiente
+            if (images[indice]) images[indice].classList.add('active');
+            if (dots[indice]) dots[indice].classList.add('active');
+        }
+
         function consultarWhatsApp(nombreProducto) {
             const mensaje = `Hola! Me interesa el producto: ${nombreProducto}. ¿Podrían darme más información?`;
             const numeroWhatsApp = contactoInfo?.telefono?.replace(/[^\d]/g, '') || '';
@@ -1962,346 +1990,6 @@
                 const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                 window.open(url, '_blank');
             }
-        }
-
-        // Función para compartir producto
-        function compartirProducto(nombreProducto) {
-            const texto = `¡Mira este producto de ${brandingData?.nombre_negocio || 'nuestra tienda'}: ${nombreProducto}!`;
-            const url = window.location.href;
-
-            if (navigator.share) {
-                navigator.share({
-                    title: nombreProducto,
-                    text: texto,
-                    url: url
-                }).catch(err => console.log('Error sharing:', err));
-            } else {
-                // Fallback a WhatsApp
-                const mensaje = `${texto} ${url}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
-            }
-        }
-
-        // CSS adicional para el diseño elegante (agregar al head o archivo CSS)
-        const estilosElegantes = `
-<style>
-.modal-backdrop-elegante {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    padding: 20px;
-}
-
-.modal-backdrop-elegante.modal-active {
-    opacity: 1;
-}
-
-.modal-backdrop-elegante.modal-saliendo {
-    opacity: 0;
-}
-
-.modal-producto-elegante {
-    background: white;
-    border-radius: 20px;
-    max-width: 900px;
-    width: 100%;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    transform: scale(0.9) translateY(30px);
-    transition: transform 0.3s ease;
-}
-
-.modal-active .modal-producto-elegante {
-    transform: scale(1) translateY(0);
-}
-
-.modal-header-elegante {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 25px 30px;
-    background: linear-gradient(135deg, var(--color-principal, #ff6b6b), var(--color-secundario, #4ecdc4));
-    color: white;
-}
-
-.producto-titulo h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.producto-categoria {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 12px;
-    margin-top: 5px;
-}
-
-.close-btn-elegante {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.close-btn-elegante:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.modal-body-elegante {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    padding: 30px;
-    max-height: calc(90vh - 100px);
-    overflow-y: auto;
-}
-
-.galeria-section {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.galeria-principal {
-    position: relative;
-    border-radius: 15px;
-    overflow: hidden;
-    aspect-ratio: 4/3;
-}
-
-.galeria-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    position: absolute;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.galeria-img.active {
-    opacity: 1;
-}
-
-.galeria-nav {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
-.galeria-dot {
-    width: 60px;
-    height: 40px;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: border-color 0.3s ease;
-}
-
-.galeria-dot.active {
-    border-color: var(--color-principal, #ff6b6b);
-}
-
-.galeria-dot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.descripcion-producto h4,
-.opciones-precios h4 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 15px 0;
-    color: var(--color-principal, #333);
-    font-size: 16px;
-}
-
-.precios-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.precio-card {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.3s ease;
-}
-
-.precio-card:hover {
-    border-color: var(--color-principal, #ff6b6b);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.precio-destacado {
-    border-color: var(--color-principal, #ff6b6b);
-    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
-}
-
-.precio-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.precio-header h5 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.badge-premium {
-    background: var(--color-principal, #ff6b6b);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: 600;
-}
-
-.precio-descripcion {
-    font-size: 13px;
-    color: #666;
-    margin: 0 0 15px 0;
-    line-height: 1.4;
-}
-
-.precio-valor {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    margin-bottom: 8px;
-}
-
-.precio-signo {
-    font-size: 16px;
-    color: var(--color-principal, #ff6b6b);
-    font-weight: 600;
-}
-
-.precio-numero {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--color-principal, #ff6b6b);
-}
-
-.precio-tipo {
-    font-size: 11px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.acciones-producto {
-    display: flex;
-    gap: 12px;
-}
-
-.btn-whatsapp,
-.btn-compartir {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.btn-whatsapp {
-    background: #25D366;
-    color: white;
-}
-
-.btn-whatsapp:hover {
-    background: #128C7E;
-    transform: translateY(-1px);
-}
-
-.btn-compartir {
-    background: #f8f9fa;
-    color: var(--color-principal, #ff6b6b);
-    border: 2px solid var(--color-principal, #ff6b6b);
-}
-
-.btn-compartir:hover {
-    background: var(--color-principal, #ff6b6b);
-    color: white;
-    transform: translateY(-1px);
-}
-
-.sin-precios {
-    text-align: center;
-    padding: 30px;
-    color: #666;
-    font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .modal-body-elegante {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        padding: 20px;
-    }
-    
-    .modal-producto-elegante {
-        margin: 10px;
-        border-radius: 15px;
-    }
-    
-    .modal-header-elegante {
-        padding: 20px;
-    }
-    
-    .producto-titulo h2 {
-        font-size: 20px;
-    }
-}
-</style>
-`;
-
-        // Inyectar estilos si no existen
-        if (!document.getElementById('estilos-modal-elegante')) {
-            const styleElement = document.createElement('style');
-            styleElement.id = 'estilos-modal-elegante';
-            styleElement.innerHTML = estilosElegantes.replace(/<\/?style>/g, '');
-            document.head.appendChild(styleElement);
         }
 
         function mostrarModalContacto() {
