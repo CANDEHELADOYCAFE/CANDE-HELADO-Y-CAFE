@@ -1742,169 +1742,172 @@
             });
         }
 
-        async function mostrarDetalleProducto(productoId) {
-            const producto = productos.find(p => p.id === productoId);
-            if (!producto) return;
+    async function mostrarDetalleProducto(productoId) {
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) return;
 
-            // Consultar variantes desde Supabase
-            const { data: variantes, error } = await supabase
-                .from('producto_variantes')
-                .select('*')
-                .eq('producto_id', productoId)
-                .order('orden', { ascending: true });
+    // Consultar variantes desde Supabase
+    const { data: variantes, error } = await supabase
+        .from('producto_variantes')
+        .select('*')
+        .eq('producto_id', productoId)
+        .order('orden', { ascending: true });
 
-            if (error) {
-                console.error('Error obteniendo variantes:', error);
-                return;
-            }
+    if (error) {
+        console.error('Error obteniendo variantes:', error);
+        return;
+    }
 
-            // Organizar precios de mayor a menor
-            const opcionesPrecios = [];
+    // Organizar precios de mayor a menor
+    const opcionesPrecios = [];
 
-            // Agregar precio base
-            if (producto.precio && producto.precio > 0) {
+    // Agregar precio base
+    if (producto.precio && producto.precio > 0) {
+        opcionesPrecios.push({
+            nombre: 'Precio base',
+            descripcion: producto.descripcion || '',
+            precio: producto.precio,
+            tipo: 'base',
+            imagen: producto.imagen
+        });
+    }
+
+    // Agregar variantes
+    if (variantes && variantes.length > 0) {
+        variantes.forEach(variante => {
+            if (variante.precio && variante.precio > 0) {
                 opcionesPrecios.push({
-                    nombre: 'Tamaño Regular',
-                    descripcion: producto.descripcion || '',
-                    precio: producto.precio,
-                    tipo: 'base',
-                    imagen: producto.imagen
+                    nombre: variante.nombre_variante,
+                    descripcion: variante.descripcion_variante || '',
+                    precio: parseFloat(variante.precio),
+                    tipo: 'variante',
+                    imagen: variante.imagen || producto.imagen
                 });
             }
+        });
+    }
 
-            // Agregar variantes
-            if (variantes && variantes.length > 0) {
-                variantes.forEach(variante => {
-                    if (variante.precio && variante.precio > 0) {
-                        opcionesPrecios.push({
-                            nombre: variante.nombre_variante,
-                            descripcion: variante.descripcion_variante || '',
-                            precio: parseFloat(variante.precio),
-                            tipo: 'variante',
-                            imagen: variante.imagen || producto.imagen
-                        });
-                    }
-                });
-            }
+    // Ordenar de mayor a menor precio
+    opcionesPrecios.sort((a, b) => b.precio - a.precio);
 
-            // Ordenar de mayor a menor precio
-            opcionesPrecios.sort((a, b) => b.precio - a.precio);
+    // Crear galería de imágenes únicas
+    const imagenesUnicas = [...new Set([
+        producto.imagen,
+        ...variantes.filter(v => v.imagen).map(v => v.imagen)
+    ])].filter(Boolean);
 
-            // Crear galería de imágenes únicas
-            const imagenesUnicas = [...new Set([
-                producto.imagen,
-                ...variantes.filter(v => v.imagen).map(v => v.imagen)
-            ])].filter(Boolean);
+    const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
 
-            const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
+    // HTML de la galería con funcionalidad para ampliar
+    const galeriaHTML = imagenesUnicas.length > 0
+        ? imagenesUnicas.map((img, i) => `
+        <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
+             data-index="${i}" alt="${producto.nombre}" 
+             onclick="ampliarImagen('${img}', '${producto.nombre}')" 
+             style="cursor: pointer;">
+      `).join('')
+        : `<img src="${imagenPorDefecto}" class="galeria-img active" alt="${producto.nombre}" 
+               onclick="ampliarImagen('${imagenPorDefecto}', '${producto.nombre}')" 
+               style="cursor: pointer;">`;
 
-            // HTML de la galería
-            const galeriaHTML = imagenesUnicas.length > 0
-                ? imagenesUnicas.map((img, i) => `
-            <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
-                 data-index="${i}" alt="${producto.nombre}">
-          `).join('')
-                : `<img src="${imagenPorDefecto}" class="galeria-img active" alt="${producto.nombre}">`;
+    // Navegación de galería
+    const navegacionHTML = imagenesUnicas.length > 1
+        ? `
+      <div class="galeria-nav">
+        ${imagenesUnicas.map((img, i) => `
+          <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}">
+            <img src="${img}" alt="Vista ${i + 1}">
+          </div>
+        `).join('')}
+      </div>
+    `
+        : '';
 
-            // Navegación de galería
-            const navegacionHTML = imagenesUnicas.length > 1
-                ? `
-          <div class="galeria-nav">
-            ${imagenesUnicas.map((img, i) => `
-              <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}">
-                <img src="${img}" alt="Vista ${i + 1}">
+    // HTML de opciones de precios
+    const opcionesPreciosHTML = opcionesPrecios.length > 0
+        ? `
+      <div class="opciones-precios">
+        <h4><i class="fas fa-tags"></i> Opciones disponibles</h4>
+        <div class="precios-grid">
+          ${opcionesPrecios.map((opcion, index) => `
+            <div class="precio-card ${index === 0 ? 'precio-destacado' : ''}">
+              <div class="precio-header">
+                <h5>${opcion.nombre}</h5>
+                ${index === 0 ? '<span class="badge-premium">Más popular</span>' : ''}
               </div>
-            `).join('')}
-          </div>
-        `
-                : '';
-
-            // HTML de opciones de precios
-            const opcionesPreciosHTML = opcionesPrecios.length > 0
-                ? `
-          <div class="opciones-precios">
-            <h4><i class="fas fa-tags"></i> Opciones disponibles</h4>
-            <div class="precios-grid">
-              ${opcionesPrecios.map((opcion, index) => `
-                <div class="precio-card ${index === 0 ? 'precio-destacado' : ''}">
-                  <div class="precio-header">
-                    <h5>${opcion.nombre}</h5>
-                    ${index === 0 ? '<span class="badge-premium">Más popular</span>' : ''}
-                  </div>
-                  ${opcion.descripcion ? `<p class="precio-descripcion">${opcion.descripcion}</p>` : ''}
-                  <div class="precio-valor">
-                    <span class="precio-signo">$</span>
-                    <span class="precio-numero">${opcion.precio.toLocaleString('es-CL')}</span>
-                  </div>
-                  ${opcion.tipo === 'base' ? '<span class="precio-tipo">Precio base</span>' : '<span class="precio-tipo">Variante</span>'}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `
-                : `<div class="sin-precios"><i class="fas fa-info-circle"></i> Consultar precio en tienda</div>`;
-
-            // Crear el modal con diseño mejorado
-            const modal = document.createElement('div');
-            modal.className = 'modal-backdrop-elegante';
-            modal.onclick = (e) => {
-                if (e.target === modal) cerrarModalElegante(modal);
-            };
-
-            modal.innerHTML = `
-      <div class="modal-producto-elegante">
-        <div class="modal-header-elegante">
-          <div class="producto-titulo">
-            <h2>${producto.nombre}</h2>
-            ${producto.tipo ? `<span class="producto-categoria">${producto.tipo}</span>` : ''}
-          </div>
-          <button class="close-btn-elegante" onclick="cerrarModalElegante(this.closest('.modal-backdrop-elegante'))">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        
-        <div class="modal-body-elegante">
-          <div class="galeria-section">
-            <div class="galeria-principal">
-              ${galeriaHTML}
-            </div>
-            ${navegacionHTML}
-          </div>
-          
-          <div class="info-section">
-            ${producto.descripcion ? `
-              <div class="descripcion-producto">
-                <h4><i class="fas fa-info-circle"></i> Descripción</h4>
-                <p>${producto.descripcion}</p>
+              ${opcion.descripcion ? `<p class="precio-descripcion">${opcion.descripcion}</p>` : ''}
+              <div class="precio-valor">
+                <span class="precio-signo">$</span>
+                <span class="precio-numero">${opcion.precio.toLocaleString('es-CL')}</span>
               </div>
-            ` : ''}
-            
-            ${opcionesPreciosHTML}
-            
-            <div class="acciones-producto">
-              <button class="btn-whatsapp" onclick="consultarWhatsApp('${producto.nombre}')">
-                <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
-              </button>
-              <button class="btn-compartir" onclick="compartirProducto('${producto.nombre}')">
-                <i class="fas fa-share-alt"></i> Compartir
-              </button>
+              ${opcion.tipo === 'base' ? '<span class="precio-tipo">Precio base</span>' : '<span class="precio-tipo">Variante</span>'}
             </div>
-          </div>
+          `).join('')}
         </div>
       </div>
-    `;
+    `
+        : `<div class="sin-precios"><i class="fas fa-info-circle"></i> Consultar precio en tienda</div>`;
 
-            document.body.appendChild(modal);
+    // Crear el modal con diseño mejorado
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop-elegante';
+    modal.onclick = (e) => {
+        if (e.target === modal) cerrarModalElegante(modal);
+    };
 
-            // Animar entrada del modal
-            setTimeout(() => {
-                modal.classList.add('modal-active');
-            }, 10);
+    modal.innerHTML = `
+  <div class="modal-producto-elegante">
+    <div class="modal-header-elegante">
+      <div class="producto-titulo">
+        <h2>${producto.nombre}</h2>
+        ${producto.tipo ? `<span class="producto-categoria">${producto.tipo}</span>` : ''}
+      </div>
+      <button class="close-btn-elegante" onclick="cerrarModalElegante(this.closest('.modal-backdrop-elegante'))">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body-elegante">
+      <div class="galeria-section">
+        <div class="galeria-principal">
+          ${galeriaHTML}
+        </div>
+        ${navegacionHTML}
+      </div>
+      
+      <div class="info-section">
+        ${producto.descripcion ? `
+          <div class="descripcion-producto">
+            <h4><i class="fas fa-info-circle"></i> Descripción</h4>
+            <p>${producto.descripcion}</p>
+          </div>
+        ` : ''}
+        
+        ${opcionesPreciosHTML}
+        
+        <div class="acciones-producto">
+          <button class="btn-whatsapp" onclick="consultarWhatsApp('${producto.nombre}')">
+            <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+          </button>
+          <button class="btn-compartir" onclick="compartirProducto('${producto.nombre}')">
+            <i class="fas fa-share-alt"></i> Compartir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
 
-            // Configurar navegación de galería
-            configurarGaleriaElegante(modal);
-        }
+    document.body.appendChild(modal);
 
+    // Animar entrada del modal
+    setTimeout(() => {
+        modal.classList.add('modal-active');
+    }, 10);
+
+    // Configurar navegación de galería
+    configurarGaleriaElegante(modal);
+}
 
         function cerrarModalElegante(modal) {
             if (!modal) return;
