@@ -1006,178 +1006,367 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <script>
-        // Configuración de Supabase
-        // const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-        // const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
 
-        // // Inicializar Supabase
-        // const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<script>
+    // =================== CONFIGURACIÓN Y VARIABLES GLOBALES ===================
+    const CONFIG = {
+        supabaseUrl: "https://kntorhiruncbnhvvyint.supabase.co",
+        supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow",
+        defaultImage: "https://via.placeholder.com/400x300?text=Sin+imagen",
+        defaultBanner: "https://images.unsplash.com/photo-1495195134817-aeb325a55b65?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80"
+    };
 
+    // Estado global de la aplicación
+    const APP_STATE = {
+        supabase: null,
+        categorias: [],
+        productos: [],
+        eventos: [],
+        galeria: [],
+        brandingData: null,
+        contactoInfo: null,
+        horarios: [],
+        currentTab: 'carta',
+        currentProductImages: [],
+        currentProductName: '',
+        currentFullscreenIndex: 0
+    };
 
-         const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+    // =================== INICIALIZACIÓN ===================
+    function initApp() {
+        try {
+            // Inicializar Supabase
+            APP_STATE.supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+            
+            // Configurar event listeners
+            setupEventListeners();
+            
+            // Cargar datos iniciales
+            loadInitialData();
+            
+            console.log('Aplicación inicializada correctamente');
+        } catch (error) {
+            console.error('Error al inicializar la aplicación:', error);
+            showError('No se pudo inicializar la aplicación. Por favor, recarga la página.');
+        }
+    }
 
-    // Inicializar Supabase
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-    // Variables globales
-    let categorias = [];
-    let productos = [];
-    let eventos = [];
-    let galeria = [];
-    let categoriasEventos = [];
-    let currentTab = 'carta';
-    let brandingData = null;
-    let contactoInfo = null;
-    let horarios = [];
-
+    function setupEventListeners() {
+        // Scroll para menú compacto
+        window.addEventListener('scroll', handleScroll);
         
-         function toggleMenu() {
+        // Cerrar menú con ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeMenu();
+                closeAllModals();
+            }
+        });
+        
+        // Cargar más datos cuando cambia de pestaña
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                refreshCurrentTab();
+            }
+        });
+    }
+
+    async function loadInitialData() {
+        try {
+            // Mostrar loading
+            showLoading(true);
+            
+            // Cargar datos en paralelo
+            await Promise.all([
+                loadBranding(),
+                loadHorarios(),
+                loadContacto(),
+                loadCategorias(),
+                loadProductos()
+            ]);
+            
+            // Actualizar estado del horario
+            updateHorarioEstado();
+            
+            // Actualizar cada minuto
+            setInterval(updateHorarioEstado, 60000);
+            
+            console.log('Datos iniciales cargados correctamente');
+        } catch (error) {
+            console.error('Error cargando datos iniciales:', error);
+            showDefaultContent();
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function showLoading(show) {
+        const loadingElements = document.querySelectorAll('.loading');
+        if (show) {
+            loadingElements.forEach(el => el.style.display = 'block');
+        } else {
+            loadingElements.forEach(el => el.style.display = 'none');
+        }
+    }
+
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger m-3';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i>
+            ${message}
+            <button onclick="this.parentElement.remove()" class="btn btn-sm btn-light float-end">×</button>
+        `;
+        document.body.prepend(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    // =================== FUNCIONES DE NAVEGACIÓN Y MENÚ ===================
+    function toggleMenu() {
         const icon = document.getElementById('menuIcon');
         icon.classList.toggle('fa-bars');
         icon.classList.toggle('fa-times');
 
         const sideMenu = document.getElementById('sideMenu');
         const overlay = document.querySelector('.overlay');
+        
         sideMenu.classList.toggle('open');
         overlay.classList.toggle('active');
+        
+        // Bloquear scroll del body cuando el menú está abierto
+        document.body.style.overflow = sideMenu.classList.contains('open') ? 'hidden' : '';
     }
 
-        
-        function closeMenu() {
+    function closeMenu() {
         const sideMenu = document.getElementById('sideMenu');
         const overlay = document.querySelector('.overlay');
-
+        
         sideMenu.classList.remove('open');
         overlay.classList.remove('active');
-
+        
         const icon = document.getElementById('menuIcon');
         icon.classList.remove('fa-times');
         icon.classList.add('fa-bars');
+        
+        document.body.style.overflow = '';
     }
-          function switchTab(tabName) {
+
+    function switchTab(tabName) {
+        // Validar que la pestaña existe
+        const validTabs = ['carta', 'eventos', 'galeria'];
+        if (!validTabs.includes(tabName)) {
+            console.error('Pestaña no válida:', tabName);
+            return;
+        }
+        
+        // Actualizar estado
+        APP_STATE.currentTab = tabName;
+        
+        // Ocultar todas las pestañas
         document.querySelectorAll('.tab-pane').forEach(pane => {
             pane.classList.remove('active');
         });
 
+        // Remover active de todos los nav-links
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
 
-        const targetTab = document.getElementById(tabName + '-tab');
+        // Mostrar la pestaña seleccionada
+        const targetTab = document.getElementById(`${tabName}-tab`);
         if (targetTab) {
             targetTab.classList.add('active');
         }
 
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
+        // Activar el nav-link correspondiente
+        document.querySelectorAll('.nav-link').forEach(link => {
             if (link.textContent.toLowerCase().includes(tabName.toLowerCase())) {
                 link.classList.add('active');
             }
         });
 
-        currentTab = tabName;
         closeMenu();
 
-        if (tabName === 'carta' && productos.length === 0) {
-            cargarProductos();
-        } else if (tabName === 'eventos' && eventos.length === 0) {
-            cargarEventos();
-        } else if (tabName === 'galeria' && galeria.length === 0) {
-            cargarGaleria();
+        // Cargar datos según la pestaña
+        switch(tabName) {
+            case 'carta':
+                if (APP_STATE.productos.length === 0) loadProductos();
+                break;
+            case 'eventos':
+                if (APP_STATE.eventos.length === 0) loadEventos();
+                break;
+            case 'galeria':
+                if (APP_STATE.galeria.length === 0) loadGaleria();
+                break;
         }
     }
 
-       async function cargarBranding() {
+    function handleScroll() {
+        const menuCompacto = document.getElementById('menuCompacto');
+        if (window.scrollY > 200) {
+            menuCompacto.style.display = 'flex';
+        } else {
+            menuCompacto.style.display = 'none';
+        }
+
+        // Activar categoría correspondiente solo en la pestaña de carta
+        if (APP_STATE.currentTab === 'carta') {
+            updateActiveCategory();
+        }
+    }
+
+    function updateActiveCategory() {
+        const categoriaMenu = document.getElementById('categoriaMenu');
+        const sections = document.querySelectorAll('.seccion');
+        const categorias = categoriaMenu.querySelectorAll('.cate');
+
+        let currentSectionId = '';
+
+        // Encontrar la sección más visible
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop - 150;
+            const sectionBottom = sectionTop + section.offsetHeight;
+            const scrollPosition = window.scrollY;
+
+            if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                currentSectionId = section.getAttribute('id');
+            }
+        });
+
+        // Si no encontramos ninguna sección actual, usar la más cercana
+        if (!currentSectionId && sections.length > 0) {
+            let closest = sections[0];
+            let closestDistance = Math.abs(sections[0].offsetTop - 150 - window.scrollY);
+
+            sections.forEach(section => {
+                const distance = Math.abs(section.offsetTop - 150 - window.scrollY);
+                if (distance < closestDistance) {
+                    closest = section;
+                    closestDistance = distance;
+                }
+            });
+
+            currentSectionId = closest.getAttribute('id');
+        }
+
+        // Actualizar categorías activas
+        categorias.forEach(cate => {
+            cate.classList.remove('active');
+            if (cate.dataset.target === currentSectionId) {
+                cate.classList.add('active');
+
+                // Hacer scroll horizontal para mantener visible la categoría activa
+                const categoriaMenu = document.getElementById('categoriaMenu');
+                const cateRect = cate.getBoundingClientRect();
+                const menuRect = categoriaMenu.getBoundingClientRect();
+
+                if (cateRect.left < menuRect.left || cateRect.right > menuRect.right) {
+                    cate.scrollIntoView({
+                        behavior: 'smooth',
+                        inline: 'center',
+                        block: 'nearest'
+                    });
+                }
+            }
+        });
+    }
+
+    // =================== FUNCIONES DE CARGA DE DATOS ===================
+    async function loadBranding() {
         try {
-            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
-            
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const { data, error } = await supabase
+            const { data, error } = await APP_STATE.supabase
                 .from('branding')
                 .select('*')
                 .limit(1)
                 .single();
 
-            if (error) {
-                console.error('Error cargando branding:', error);
-                return;
-            }
+            if (error) throw error;
 
-            brandingData = data;
-
-            if (brandingData) {
-                const perfilLogo = document.getElementById('perfilLogo');
-                if (brandingData.logo_url) {
-                    perfilLogo.innerHTML =
-                        `<img src="${brandingData.logo_url}" alt="${brandingData.nombre_negocio}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-                } else {
-                    perfilLogo.textContent = brandingData.nombre_negocio.charAt(0);
-                }
-
-                if (brandingData.banner_url) {
-                    document.getElementById('perfilHeader').style.backgroundImage =
-                        `url('${brandingData.banner_url}')`;
-                }
-
-                document.getElementById('perfilNombre').textContent = brandingData.nombre_negocio;
-                document.getElementById('menuCompacto').textContent = brandingData.nombre_negocio;
-                document.getElementById('menuNombreNegocio').textContent = brandingData.nombre_negocio;
-
-                if (brandingData.color_principal) {
-                    document.documentElement.style.setProperty('--color-principal', brandingData.color_principal);
-                }
-                if (brandingData.color_secundario) {
-                    document.documentElement.style.setProperty('--color-secundario', brandingData.color_secundario);
-                }
-            }
+            APP_STATE.brandingData = data;
+            applyBranding();
+            
         } catch (error) {
             console.error('Error cargando branding:', error);
+            applyDefaultBranding();
         }
     }
 
-     async function cargarHorarios() {
+    function applyBranding() {
+        const branding = APP_STATE.brandingData;
+        if (!branding) return;
+
+        // Actualizar logo
+        const perfilLogo = document.getElementById('perfilLogo');
+        if (branding.logo_url) {
+            perfilLogo.innerHTML = `
+                <img src="${branding.logo_url}" 
+                     alt="${branding.nombre_negocio}" 
+                     style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+            `;
+        } else {
+            perfilLogo.textContent = branding.nombre_negocio.charAt(0);
+        }
+
+        // Actualizar banner
+        const perfilHeader = document.getElementById('perfilHeader');
+        if (branding.banner_url) {
+            perfilHeader.style.backgroundImage = `url('${branding.banner_url}')`;
+        } else {
+            perfilHeader.style.backgroundImage = `url('${CONFIG.defaultBanner}')`;
+        }
+
+        // Actualizar nombre en todos los lugares
+        document.getElementById('perfilNombre').textContent = branding.nombre_negocio;
+        document.getElementById('menuCompacto').textContent = branding.nombre_negocio;
+        document.getElementById('menuNombreNegocio').textContent = branding.nombre_negocio;
+
+        // Actualizar colores CSS
+        if (branding.color_principal) {
+            document.documentElement.style.setProperty('--color-principal', branding.color_principal);
+        }
+        if (branding.color_secundario) {
+            document.documentElement.style.setProperty('--color-secundario', branding.color_secundario);
+        }
+    }
+
+    function applyDefaultBranding() {
+        const perfilHeader = document.getElementById('perfilHeader');
+        perfilHeader.style.backgroundImage = `url('${CONFIG.defaultBanner}')`;
+    }
+
+    async function loadHorarios() {
         try {
-            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
-            
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const { data, error } = await supabase
+            const { data, error } = await APP_STATE.supabase
                 .from('horarios')
                 .select('*')
                 .order('dia_semana');
 
-            if (error) {
-                console.error('Error cargando horarios:', error);
-                return;
-            }
+            if (error) throw error;
 
-            horarios = data || [];
-            actualizarEstadoHorario();
+            APP_STATE.horarios = data || [];
+            
         } catch (error) {
             console.error('Error cargando horarios:', error);
+            APP_STATE.horarios = [];
         }
     }
 
-       function actualizarEstadoHorario() {
+    function updateHorarioEstado() {
         const ahora = new Date();
         const diaSemana = ahora.getDay();
         const horaActual = ahora.getHours() + (ahora.getMinutes() / 60);
 
-        const horarioHoy = horarios.find(h => h.dia_semana === diaSemana);
+        const horarioHoy = APP_STATE.horarios.find(h => h.dia_semana === diaSemana);
 
         if (!horarioHoy || horarioHoy.cerrado) {
-            document.getElementById('horarioInfo').innerHTML =
+            document.getElementById('horarioInfo').innerHTML = 
                 `Hoy: <span class="estado-apertura estado-cerrado">CERRADO</span>`;
             return;
         }
 
+        // Convertir horas
         const [aperturaHoras, aperturaMinutos] = horarioHoy.apertura.split(':').map(Number);
         const [cierreHoras, cierreMinutos] = horarioHoy.cierre.split(':').map(Number);
 
@@ -1190,65 +1379,49 @@
             ? `<span class="estado-apertura estado-abierto">ABIERTO</span>`
             : `<span class="estado-apertura estado-cerrado">CERRADO</span>`;
 
-        document.getElementById('horarioInfo').innerHTML =
+        document.getElementById('horarioInfo').innerHTML = 
             `Horario: ${horarioHoy.apertura} - ${horarioHoy.cierre} ${estadoHTML}`;
     }
-       async function cargarContacto() {
+
+    async function loadContacto() {
         try {
-            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
-            
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const { data, error } = await supabase
+            const { data, error } = await APP_STATE.supabase
                 .from('contacto')
                 .select('*')
                 .limit(1)
                 .single();
 
-            if (error) {
-                console.error('Error cargando contacto:', error);
-                return;
-            }
+            if (error) throw error;
 
-            contactoInfo = data;
+            APP_STATE.contactoInfo = data;
+            
         } catch (error) {
             console.error('Error cargando contacto:', error);
+            APP_STATE.contactoInfo = null;
         }
     }
 
-    async function cargarCategorias() {
+    async function loadCategorias() {
         try {
-            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
-            
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const { data, error } = await supabase
+            const { data, error } = await APP_STATE.supabase
                 .from('categorias')
                 .select('*')
                 .order('id');
 
-            if (error) {
-                console.error('Error cargando categorías:', error);
-                return;
-            }
+            if (error) throw error;
 
-            categorias = data || [];
-            mostrarCategorias();
+            APP_STATE.categorias = data || [];
+            renderCategorias();
+            
         } catch (error) {
             console.error('Error cargando categorías:', error);
-            mostrarCategoriasDefault();
+            renderDefaultCategorias();
         }
     }
-        async function cargarProductos() {
+
+    async function loadProductos() {
         try {
-            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
-            
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const { data, error } = await supabase
+            const { data, error } = await APP_STATE.supabase
                 .from('productos')
                 .select(`
                     *,
@@ -1258,227 +1431,204 @@
                 .order('orden', { ascending: true, nullsFirst: false })
                 .order('id');
 
-            if (error) {
-                console.error('Error cargando productos:', error);
-                mostrarProductosDefault();
-                return;
-            }
+            if (error) throw error;
 
-            productos = data || [];
-            mostrarProductos();
+            APP_STATE.productos = data || [];
+            renderProductos();
+            
         } catch (error) {
             console.error('Error cargando productos:', error);
-            mostrarProductosDefault();
+            renderNoProductos();
         }
     }
 
-        async function cargarEventos() {
-            try {
-                const { data, error } = await supabase
-                    .from('eventos_privados')
-                    .select('*')
-                    .eq('activo', true)
-                    .order('fecha_inicio');
+    async function loadEventos() {
+        try {
+            const { data, error } = await APP_STATE.supabase
+                .from('eventos_privados')
+                .select('*')
+                .eq('activo', true)
+                .order('fecha_inicio');
 
-                if (error) {
-                    console.error('Error cargando eventos:', error);
-                    mostrarEventosDefault();
-                    return;
-                }
+            if (error) throw error;
 
-                eventos = data || [];
-                mostrarEventos();
-            } catch (error) {
-                console.error('Error cargando eventos:', error);
-                mostrarEventosDefault();
-            }
+            APP_STATE.eventos = data || [];
+            renderEventos();
+            
+        } catch (error) {
+            console.error('Error cargando eventos:', error);
+            renderNoEventos();
+        }
+    }
+
+    async function loadGaleria() {
+        try {
+            const { data, error } = await APP_STATE.supabase
+                .from('galeria_imagenes')
+                .select('*')
+                .eq('activo', true)
+                .order('orden', { ascending: true });
+
+            if (error) throw error;
+
+            APP_STATE.galeria = data || [];
+            renderGaleria();
+            
+        } catch (error) {
+            console.error('Error cargando galería:', error);
+            renderNoGaleria();
+        }
+    }
+
+    // =================== FUNCIONES DE RENDERIZADO ===================
+    function renderCategorias() {
+        const container = document.getElementById('categoriaMenu');
+        
+        if (!container) return;
+        
+        if (APP_STATE.categorias.length === 0) {
+            renderDefaultCategorias();
+            return;
         }
 
-        async function cargarGaleria() {
-            try {
-                const { data, error } = await supabase
-                    .from('galeria_imagenes')
-                    .select('*')
-                    .eq('activo', true)
-                    .order('orden', { ascending: true });
+        container.innerHTML = APP_STATE.categorias.map(categoria => `
+            <div class="cate" 
+                 data-target="categoria-${categoria.id}" 
+                 style="background-color: ${categoria.color_fondo || '#f0f0f0'}; 
+                        color: ${categoria.color_texto || '#333'};">
+                ${categoria.icono ? `<i class="${categoria.icono}"></i> ` : ''}
+                ${categoria.nombre}
+            </div>
+        `).join('');
 
-                if (error) {
-                    console.error('Error cargando galería:', error);
-                    mostrarGaleriaDefault();
-                    return;
-                }
-
-                galeria = data || [];
-                mostrarGaleria();
-            } catch (error) {
-                console.error('Error cargando galería:', error);
-                mostrarGaleriaDefault();
-            }
+        // Activar la primera categoría
+        if (container.children.length > 0) {
+            container.children[0].classList.add('active');
         }
 
-        // FUNCIONES DE MOSTRAR DATOS
-        function mostrarCategorias() {
-            const container = document.getElementById('categoriaMenu');
+        // Agregar eventos de click
+        container.querySelectorAll('.cate').forEach(cate => {
+            cate.addEventListener('click', () => {
+                container.querySelectorAll('.cate').forEach(c => c.classList.remove('active'));
+                cate.classList.add('active');
 
-            if (categorias.length === 0) {
-                mostrarCategoriasDefault();
-                return;
-            }
-
-            container.innerHTML = categorias.map(categoria => `
-        <div class="cate" 
-             data-target="categoria-${categoria.id}" 
-             style="background-color: ${categoria.color_fondo || '#f0f0f0'}; color: ${categoria.color_texto || '#333'}">
-          ${categoria.icono ? `<i class="${categoria.icono}"></i> ` : ''}${categoria.nombre}
-        </div>
-      `).join('');
-
-            // Activar la primera categoría
-            if (container.children.length > 0) {
-                container.children[0].classList.add('active');
-            }
-
-            // Agregar eventos de click
-            container.querySelectorAll('.cate').forEach(cate => {
-                cate.addEventListener('click', () => {
-                    container.querySelectorAll('.cate').forEach(c => c.classList.remove('active'));
-                    cate.classList.add('active');
-
-                    const targetId = cate.dataset.target;
-                    const section = document.getElementById(targetId);
-                    if (section) {
-                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                });
+                const targetId = cate.dataset.target;
+                const section = document.getElementById(targetId);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
+        });
+    }
+
+    function renderDefaultCategorias() {
+        const container = document.getElementById('categoriaMenu');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="cate active" data-target="jugos">Jugos</div>
+            <div class="cate" data-target="gaseosa">Gaseosas</div>
+            <div class="cate" data-target="postres">Postres</div>
+            <div class="cate" data-target="cafes">Cafés</div>
+            <div class="cate" data-target="licuados">Licuados</div>
+        `;
+
+        container.querySelectorAll('.cate').forEach(cate => {
+            cate.addEventListener('click', () => {
+                container.querySelectorAll('.cate').forEach(c => c.classList.remove('active'));
+                cate.classList.add('active');
+
+                const targetId = cate.dataset.target;
+                const section = document.getElementById(targetId);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    }
+
+    async function renderProductos() {
+        const container = document.getElementById('productosContainer');
+        
+        if (!container) return;
+        
+        if (APP_STATE.productos.length === 0) {
+            renderNoProductos();
+            return;
         }
 
-        function mostrarCategoriasEventos() {
-            const container = document.getElementById('categoriaEventosMenu');
-            const eventosTab = document.getElementById('eventos-tab');
+        // Agrupar productos por categoría
+        const productosPorCategoria = {};
+        
+        // Inicializar categorías
+        APP_STATE.categorias.forEach(categoria => {
+            productosPorCategoria[categoria.id] = {
+                nombre: categoria.nombre,
+                productos: []
+            };
+        });
 
-            // Extraer categorías únicas de los eventos
-            const categoriasUnicas = [...new Set(eventos.map(evento => evento.categoria_evento).filter(Boolean))];
+        // Obtener precios máximos
+        const productosConPrecio = await Promise.all(
+            APP_STATE.productos.map(async (producto) => {
+                const precioMaximo = await obtenerPrecioMaximo(producto.id, producto.precio);
+                return { ...producto, precioMostrar: precioMaximo };
+            })
+        );
 
-            // Si no hay eventos → ocultar toda la sección
-            if (eventos.length === 0) {
-                eventosTab.style.display = "none";
-                return;
+        // Agrupar productos
+        productosConPrecio.forEach(producto => {
+            if (productosPorCategoria[producto.categoria_id]) {
+                productosPorCategoria[producto.categoria_id].productos.push(producto);
             } else {
-                eventosTab.style.display = "block"; // mostrar si hay
-            }
-
-            // Si no hay categorías pero sí eventos → solo dejar "Todos"
-            if (categoriasUnicas.length === 0) {
-                container.innerHTML = '<div class="cate-evento active" data-categoria="todos">Todos</div>';
-                return;
-            }
-
-            // Renderizar categorías dinámicas
-            container.innerHTML = `
-        <div class="cate-evento active" data-categoria="todos">Todos</div>
-        ${categoriasUnicas.map(categoria => `
-          <div class="cate-evento" data-categoria="${categoria}">
-            ${categoria}
-          </div>
-        `).join('')}
-    `;
-
-            // Agregar eventos de click
-            container.querySelectorAll('.cate-evento').forEach(cate => {
-                cate.addEventListener('click', () => {
-                    container.querySelectorAll('.cate-evento').forEach(c => c.classList.remove('active'));
-                    cate.classList.add('active');
-
-                    const categoriaId = cate.dataset.categoria;
-                    filtrarEventosPorCategoria(categoriaId);
-                });
-            });
-        }
-
-        function filtrarEventosPorCategoria(categoriaId) {
-            const eventosFiltrados = categoriaId === 'todos'
-                ? eventos
-                : eventos.filter(evento => evento.categoria_evento === categoriaId);
-
-            mostrarEventosFiltrados(eventosFiltrados);
-        }
-
-        function mostrarCategoriasDefault() {
-            const container = document.getElementById('categoriaMenu');
-            container.innerHTML = `
-        <div class="cate active" data-target="jugos">Jugos</div>
-        <div class="cate" data-target="gaseosa">Gaseosas</div>
-        <div class="cate" data-target="postres">Postres</div>
-        <div class="cate" data-target="cafes">Cafés</div>
-        <div class="cate" data-target="licuados">Licuados</div>
-      `;
-
-            // Agregar eventos de click
-            container.querySelectorAll('.cate').forEach(cate => {
-                cate.addEventListener('click', () => {
-                    container.querySelectorAll('.cate').forEach(c => c.classList.remove('active'));
-                    cate.classList.add('active');
-
-                    const targetId = cate.dataset.target;
-                    const section = document.getElementById(targetId);
-                    if (section) {
-                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                });
-            });
-        }
-
-        // Función para mostrar productos con precio máximo
-        async function mostrarProductos() {
-            const container = document.getElementById('productosContainer');
-
-            if (productos.length === 0) {
-                mostrarProductosDefault();
-                return;
-            }
-
-            // Agrupar productos por categoría
-            const productosPorCategoria = {};
-
-            // Primero crear entradas para todas las categorías, incluso si no tienen productos
-            categorias.forEach(categoria => {
-                productosPorCategoria[categoria.id] = {
-                    nombre: categoria.nombre,
-                    productos: []
+                productosPorCategoria[producto.categoria_id] = {
+                    nombre: 'Otras categorías',
+                    productos: [producto]
                 };
-            });
+            }
+        });
 
-            // Obtener precios máximos para todos los productos de una vez
-            const productosConPrecioMaximo = await Promise.all(
-                productos.map(async (producto) => {
-                    const precioMaximo = await obtenerPrecioMaximo(producto);
-                    return {
-                        ...producto,
-                        precioMostrar: precioMaximo
-                    };
-                })
-            );
+        // Filtrar categorías vacías
+        const categoriasConProductos = Object.entries(productosPorCategoria)
+            .filter(([_, data]) => data.productos.length > 0);
 
-            // Agregar productos a sus categorías
-            productosConPrecioMaximo.forEach(producto => {
-                if (productosPorCategoria[producto.categoria_id]) {
-                    productosPorCategoria[producto.categoria_id].productos.push(producto);
-                } else {
-                    // Si la categoría no existe en nuestro listado, crear una entrada
-                    productosPorCategoria[producto.categoria_id] = {
-                        nombre: 'Otras categorías',
-                        productos: [producto]
-                    };
-                }
-            });
+        if (categoriasConProductos.length === 0) {
+            renderNoProductos();
+            return;
+        }
 
-            // Filtrar categorías que no tienen productos
-            const categoriasConProductos = Object.entries(productosPorCategoria)
-                .filter(([categoriaId, data]) => data.productos.length > 0);
+        container.innerHTML = categoriasConProductos.map(([categoriaId, data]) => `
+            <div class="seccion" id="categoria-${categoriaId}">
+                <h2>${data.nombre}</h2>
+                <div class="grid">
+                    ${data.productos.map(producto => `
+                        <div class="producto ${producto.activo ? '' : 'producto-inactivo'}" 
+                             onclick="${producto.activo ? `showProductoDetalle(${producto.id})` : ''}">
+                            <div class="producto-imagen">
+                                <img src="${producto.imagen || CONFIG.defaultImage}" 
+                                     alt="${producto.nombre}"
+                                     loading="lazy">
+                            </div>
+                            <div class="producto-contenido">
+                                <div class="producto-nombre">${producto.nombre}</div>
+                                ${producto.tipo ? `<div class="producto-tipo">${producto.tipo}</div>` : ''}
+                                <div class="producto-descripcion">${producto.descripcion || ''}</div>
+                                ${producto.precioMostrar ? 
+                                    `<div class="producto-precio">$${producto.precioMostrar.toLocaleString('es-CL')}</div>` : 
+                                    `<div class="producto-precio">Consultar precio</div>`}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
 
-            if (categoriasConProductos.length === 0) {
-                container.innerHTML = `
+    function renderNoProductos() {
+        const container = document.getElementById('productosContainer');
+        if (!container) return;
+        
+        container.innerHTML = `
             <div class="seccion">
                 <h2>Productos</h2>
                 <div class="sin-productos">
@@ -1487,221 +1637,237 @@
                 </div>
             </div>
         `;
-                return;
+    }
+
+    async function obtenerPrecioMaximo(productoId, precioBase) {
+        try {
+            const { data: variantes, error } = await APP_STATE.supabase
+                .from('producto_variantes')
+                .select('precio')
+                .eq('producto_id', productoId);
+
+            if (error) throw error;
+
+            const precios = [];
+
+            // Agregar precio base
+            if (precioBase && precioBase > 0) {
+                precios.push(parseFloat(precioBase));
             }
 
-            container.innerHTML = categoriasConProductos.map(([categoriaId, data]) => `
-        <div class="seccion" id="categoria-${categoriaId}">
-            <h2>${data.nombre}</h2>
-            <div class="grid">
-                ${data.productos.map(producto => `
-                    <div class="producto ${producto.activo ? '' : 'producto-inactivo'}" onclick="${producto.activo ? `mostrarDetalleProducto(${producto.id})` : ''}">
-                        <div class="producto-imagen">
-                            <img src="${producto.imagen}" alt="${producto.nombre}">
-                        </div>
-                        <div class="producto-contenido">
-                            <div class="producto-nombre">${producto.nombre}</div>
-                            ${producto.tipo ? `<div class="producto-tipo">${producto.tipo}</div>` : ''}
-                            <div class="producto-descripcion">${producto.descripcion}</div>
-                            ${producto.precioMostrar ? `<div class="producto-precio">$${producto.precioMostrar.toLocaleString('es-CL')}</div>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
-        }
-
-        // Nueva función para obtener el precio máximo de un producto
-        async function obtenerPrecioMaximo(producto) {
-            try {
-                // Consultar variantes del producto
-                const { data: variantes, error } = await supabase
-                    .from('producto_variantes')
-                    .select('precio')
-                    .eq('producto_id', producto.id);
-
-                if (error) {
-                    console.error('Error obteniendo variantes para precio:', error);
-                    return producto.precio; // Retornar precio base en caso de error
-                }
-
-                // Si no hay variantes, retornar precio base
-                if (!variantes || variantes.length === 0) {
-                    return producto.precio;
-                }
-
-                // Obtener todos los precios válidos (incluyendo precio base y variantes)
-                const precios = [];
-
-                // Agregar precio base si existe
-                if (producto.precio && producto.precio > 0) {
-                    precios.push(producto.precio);
-                }
-
-                // Agregar precios de variantes
+            // Agregar precios de variantes
+            if (variantes && variantes.length > 0) {
                 variantes.forEach(variante => {
                     if (variante.precio && variante.precio > 0) {
                         precios.push(parseFloat(variante.precio));
                     }
                 });
-
-                // Si no hay precios válidos, retornar 0
-                if (precios.length === 0) {
-                    return 0;
-                }
-
-                // Retornar el precio máximo
-                return Math.max(...precios);
-
-            } catch (error) {
-                console.error('Error calculando precio máximo:', error);
-                return producto.precio; // Fallback al precio base
             }
+
+            return precios.length > 0 ? Math.max(...precios) : 0;
+            
+        } catch (error) {
+            console.error('Error obteniendo precio máximo:', error);
+            return precioBase || 0;
+        }
+    }
+
+    function renderEventos() {
+        const container = document.getElementById('eventosContainer');
+        if (!container) return;
+        
+        if (APP_STATE.eventos.length === 0) {
+            renderNoEventos();
+            return;
         }
 
-        function mostrarProductosDefault() {
-            const container = document.getElementById('productosContainer');
+        renderCategoriasEventos();
+        renderEventosFiltrados(APP_STATE.eventos);
+    }
+
+    function renderCategoriasEventos() {
+        const container = document.getElementById('categoriaEventosMenu');
+        const eventosTab = document.getElementById('eventos-tab');
+        
+        if (!container || !eventosTab) return;
+
+        // Extraer categorías únicas
+        const categoriasUnicas = [...new Set(
+            APP_STATE.eventos.map(evento => evento.categoria_evento).filter(Boolean)
+        )];
+
+        container.innerHTML = `
+            <div class="cate-evento active" data-categoria="todos">Todos</div>
+            ${categoriasUnicas.map(categoria => `
+                <div class="cate-evento" data-categoria="${categoria}">
+                    ${categoria}
+                </div>
+            `).join('')}
+        `;
+
+        // Event listeners
+        container.querySelectorAll('.cate-evento').forEach(cate => {
+            cate.addEventListener('click', () => {
+                container.querySelectorAll('.cate-evento').forEach(c => c.classList.remove('active'));
+                cate.classList.add('active');
+
+                const categoriaId = cate.dataset.categoria;
+                filterEventosPorCategoria(categoriaId);
+            });
+        });
+    }
+
+    function filterEventosPorCategoria(categoriaId) {
+        const eventosFiltrados = categoriaId === 'todos'
+            ? APP_STATE.eventos
+            : APP_STATE.eventos.filter(evento => evento.categoria_evento === categoriaId);
+        
+        renderEventosFiltrados(eventosFiltrados);
+    }
+
+    function renderEventosFiltrados(eventosFiltrados) {
+        const container = document.getElementById('eventosContainer');
+        if (!container) return;
+
+        // Filtrar eventos futuros
+        const ahora = new Date();
+        const eventosFuturos = eventosFiltrados.filter(evento => {
+            const fechaEvento = new Date(evento.fecha_inicio);
+            return fechaEvento >= ahora;
+        });
+
+        if (eventosFuturos.length === 0) {
             container.innerHTML = `
-                <div class="seccion">
-                    <h2>Productos</h2>
-                    <div class="sin-productos">
-                        <i class="fas fa-box-open"></i>
-                        <p>No hay productos disponibles en este momento.</p>
-                    </div>
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x mb-3" style="color: #ccc;"></i>
+                    <p>No hay eventos programados en este momento.</p>
                 </div>
             `;
+            return;
         }
 
-        function mostrarEventos() {
-            const container = document.getElementById('eventosContainer');
-            const categoriasMenu = document.getElementById('categoriaEventosMenu');
-            if (categoriasMenu) {
-                categoriasMenu.style.display = "flex"; // o block, según tu CSS
-            }
-
-            if (eventos.length === 0) {
-                mostrarEventosDefault();
-                return;
-            }
-
-            mostrarCategoriasEventos();
-            mostrarEventosFiltrados(eventos);
-        }
-
-        function mostrarEventosFiltrados(eventosFiltrados) {
-            const container = document.getElementById('eventosContainer');
-
-            // Filtrar eventos futuros o en curso
-            const ahora = new Date();
-            const eventosFuturos = eventosFiltrados.filter(evento => {
-                const fechaEvento = new Date(evento.fecha_inicio);
-                return fechaEvento >= ahora || evento.estado === 'activo';
-            });
-
-            if (eventosFuturos.length === 0) {
-                container.innerHTML = `
-          <div class="text-center py-5">
-            <i class="fas fa-calendar-times fa-3x mb-3" style="color: #ccc;"></i>
-            <p>No hay eventos programados en este momento.</p>
-          </div>
-        `;
-                return;
-            }
-
-            container.innerHTML = eventosFuturos.map(evento => {
-                return `
-        <div class="evento-card">
-          ${evento.imagen ? `<img src="${evento.imagen}" alt="${evento.titulo}" class="evento-imagen">` :
-                        `<div style="height: 200px; background: linear-gradient(135deg, var(--color-principal), var(--color-secundario)); display: flex; align-items: center; justify-content: center; color: white;">
-              <i class="fas fa-calendar-alt fa-3x"></i>
-            </div>`}
-          <div class="evento-info">
-            <div class="evento-titulo">${evento.titulo}</div>
-            ${evento.categoria_evento ? `<div style="font-size: 12px; color: var(--color-principal); margin-bottom: 8px;"><i class="fas fa-tag"></i> ${evento.categoria_evento}</div>` : ''}
-            <div class="evento-descripcion">${evento.descripcion || ''}</div>
-            <div class="evento-detalles">
-              <div class="evento-fecha">
-                <i class="fas fa-calendar"></i> ${formatearFecha(evento.fecha_inicio)}
-                ${evento.hora_inicio ? ` - ${evento.hora_inicio}` : ''}
-              </div>
-              ${evento.precio ? `<div class="evento-precio">$${evento.precio.toLocaleString()}</div>` : ''}
+        container.innerHTML = eventosFuturos.map(evento => `
+            <div class="evento-card">
+                ${evento.imagen ? 
+                    `<img src="${evento.imagen}" alt="${evento.titulo}" class="evento-imagen" loading="lazy">` : 
+                    `<div style="height: 200px; background: linear-gradient(135deg, var(--color-principal), var(--color-secundario)); 
+                              display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-calendar-alt fa-3x"></i>
+                    </div>`
+                }
+                <div class="evento-info">
+                    <div class="evento-titulo">${evento.titulo}</div>
+                    ${evento.categoria_evento ? 
+                        `<div style="font-size: 12px; color: var(--color-principal); margin-bottom: 8px;">
+                            <i class="fas fa-tag"></i> ${evento.categoria_evento}
+                        </div>` : ''
+                    }
+                    <div class="evento-descripcion">${evento.descripcion || ''}</div>
+                    <div class="evento-detalles">
+                        <div class="evento-fecha">
+                            <i class="fas fa-calendar"></i> ${formatFecha(evento.fecha_inicio)}
+                            ${evento.hora_inicio ? ` - ${evento.hora_inicio}` : ''}
+                        </div>
+                        ${evento.precio ? 
+                            `<div class="evento-precio">$${evento.precio.toLocaleString()}</div>` : ''
+                        }
+                    </div>
+                    ${evento.capacidad_maxima ? `
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            <i class="fas fa-users"></i> 
+                            Capacidad: ${evento.personas_registradas || 0}/${evento.capacidad_maxima} personas
+                        </div>
+                    ` : ''}
+                    ${evento.ubicacion ? `
+                        <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                            <i class="fas fa-map-marker-alt"></i> ${evento.ubicacion}
+                        </div>
+                    ` : ''}
+                </div>
             </div>
-            ${evento.capacidad_maxima ? `
-              <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                <i class="fas fa-users"></i> Capacidad: ${evento.personas_registradas || 0}/${evento.capacidad_maxima} personas
-              </div>
-            ` : ''}
-            ${evento.ubicacion ? `
-              <div style="margin-top: 5px; font-size: 12px; color: #666;">
-                <i class="fas fa-map-marker-alt"></i> ${evento.ubicacion}
-              </div>
-            ` : ''}
-          </div>
-        </div>
-      `}).join('');
+        `).join('');
+    }
+
+    function renderNoEventos() {
+        const container = document.getElementById('eventosContainer');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div style="text-align:center; margin-top:40px;">
+                <lottie-player 
+                    src="https://assets4.lottiefiles.com/packages/lf20_jcikwtux.json"  
+                    background="transparent"  
+                    speed="1"  
+                    style="width: 120px; height: 120px;"  
+                    loop  
+                    autoplay>
+                </lottie-player>
+                <p style="color:#666; font-size:16px; margin-top:10px;">
+                    Aún no hay eventos disponibles 🎶
+                </p>
+            </div>
+        `;
+    }
+
+    function renderGaleria() {
+        const container = document.getElementById('galeriaContainer');
+        if (!container) return;
+        
+        if (APP_STATE.galeria.length === 0) {
+            renderNoGaleria();
+            return;
         }
 
-        function mostrarEventosDefault() {
-            const container = document.getElementById('eventosContainer');
-            const categoriasMenu = document.getElementById('categoriaEventosMenu');
+        container.innerHTML = APP_STATE.galeria.map((imagen, index) => `
+            <div class="galeria-item" onclick="openFullscreenGallery(${index})">
+                <img src="${imagen.url}" 
+                     alt="${imagen.titulo || 'Imagen galería'}" 
+                     loading="lazy">
+                ${imagen.titulo ? `
+                    <div class="galeria-overlay">
+                        <p>${imagen.titulo}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
 
-            // Ocultar menú de categorías
-            if (categoriasMenu) {
-                categoriasMenu.style.display = "none";
-            }
+    function renderNoGaleria() {
+        const container = document.getElementById('galeriaContainer');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-images fa-3x mb-3" style="color: #ccc;"></i>
+                <p>No hay imágenes en la galería.</p>
+            </div>
+        `;
+    }
 
-            // Mostrar animación de "sin eventos"
-            container.innerHTML = `
-        <div style="text-align:center; margin-top:40px;">
-            <lottie-player 
-                src="https://assets4.lottiefiles.com/packages/lf20_jcikwtux.json"  
-                background="transparent"  
-                speed="1"  
-                style="width: 120px; height: 120px;"  
-                loop  
-                autoplay>
-            </lottie-player>
-            <p style="color:#666; font-size:16px; margin-top:10px;">
-                Aún no hay eventos disponibles 🎶
-            </p>
-        </div>
-    `;
-        }
+    function showDefaultContent() {
+        renderDefaultCategorias();
+        renderNoProductos();
+        renderNoEventos();
+        renderNoGaleria();
+    }
 
-        // FUNCIONES AUXILIARES
-        function formatearFecha(fecha) {
-            if (!fecha) return '';
-            const date = new Date(fecha);
-            return date.toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
+    // =================== FUNCIONES DE PRODUCTOS DETALLE ===================
+    async function showProductoDetalle(productoId) {
+        try {
+            const producto = APP_STATE.productos.find(p => p.id === productoId);
+            if (!producto) throw new Error('Producto no encontrado');
 
-        // Función para mostrar detalle del producto
-        // Función para mostrar detalle del producto (MODIFICADA)
-        async function mostrarDetalleProducto(productoId) {
-            const producto = productos.find(p => p.id === productoId);
-            if (!producto) return;
-
-            // Consultar variantes desde Supabase
-            const { data: variantes, error } = await supabase
+            // Cargar variantes
+            const { data: variantes, error } = await APP_STATE.supabase
                 .from('producto_variantes')
                 .select('*')
                 .eq('producto_id', productoId)
                 .order('orden', { ascending: true });
 
-            if (error) {
-                console.error('Error obteniendo variantes:', error);
-                return;
-            }
+            if (error) throw error;
 
-            // Solo agregar variantes, no el precio base
+            // Preparar datos
             const opcionesPrecios = [];
-
-            // Agregar solo variantes
             if (variantes && variantes.length > 0) {
                 variantes.forEach(variante => {
                     if (variante.precio && variante.precio > 0) {
@@ -1716,40 +1882,54 @@
                 });
             }
 
-            // Ordenar de mayor a menor precio
+            // Ordenar por precio
             opcionesPrecios.sort((a, b) => b.precio - a.precio);
 
-            // Crear galería de imágenes únicas
+            // Galería de imágenes
             const imagenesUnicas = [...new Set([
                 producto.imagen,
                 ...variantes.filter(v => v.imagen).map(v => v.imagen)
             ])].filter(Boolean);
 
-            const imagenPorDefecto = "https://via.placeholder.com/400x300?text=Sin+imagen";
+            // Crear modal
+            createProductoModal(producto, opcionesPrecios, imagenesUnicas);
+            
+        } catch (error) {
+            console.error('Error mostrando detalle del producto:', error);
+            showError('No se pudo cargar el detalle del producto');
+        }
+    }
 
-            // HTML de la galería (MODIFICADO)
-            const galeriaHTML = imagenesUnicas.length > 0
-                ? imagenesUnicas.map((img, i) => `
-            <img src="${img}" class="galeria-img ${i === 0 ? 'active' : ''}" 
-                 alt="${producto.nombre}" onclick="abrirFullscreenGaleria(${i})">
-        `).join('')
-                : `<img src="${imagenPorDefecto}" class="galeria-img active" 
-                alt="${producto.nombre}" onclick="abrirFullscreenGaleria(0)">`;
+    function createProductoModal(producto, opcionesPrecios, imagenesUnicas) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
 
-            // Navegación de galería
-            const navegacionHTML = imagenesUnicas.length > 1
-                ? `
+        // Guardar imágenes para fullscreen
+        APP_STATE.currentProductImages = imagenesUnicas.length > 0 ? 
+            imagenesUnicas : [CONFIG.defaultImage];
+        APP_STATE.currentProductName = producto.nombre;
+
+        const galeriaHTML = APP_STATE.currentProductImages.map((img, i) => `
+            <img src="${img}" 
+                 class="galeria-img ${i === 0 ? 'active' : ''}" 
+                 alt="${producto.nombre}" 
+                 onclick="openFullscreenGallery(${i})">
+        `).join('');
+
+        const navegacionHTML = APP_STATE.currentProductImages.length > 1 ? `
             <div class="galeria-nav">
-                ${imagenesUnicas.map((img, i) => `
-                    <div class="galeria-dot ${i === 0 ? 'active' : ''}" data-index="${i}" onclick="cambiarImagenGaleria(${i})"></div>
+                ${APP_STATE.currentProductImages.map((_, i) => `
+                    <div class="galeria-dot ${i === 0 ? 'active' : ''}" 
+                         data-index="${i}" 
+                         onclick="changeGalleryImage(${i})"></div>
                 `).join('')}
             </div>
-        `
-                : '';
+        ` : '';
 
-            // HTML de opciones de precios (solo variantes)
-            const opcionesPreciosHTML = opcionesPrecios.length > 0
-                ? `
+        const opcionesHTML = opcionesPrecios.length > 0 ? `
             <div class="producto-variantes">
                 <h4>Opciones disponibles</h4>
                 ${opcionesPrecios.map(opcion => `
@@ -1760,357 +1940,316 @@
                     </div>
                 `).join('')}
             </div>
-        `
-                : `<p>Consultar precio en tienda</p>`;
+        ` : '<p>Consultar precio en tienda</p>';
 
-            // Crear el modal
-            const modal = document.createElement('div');
-            modal.className = 'modal-backdrop';
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-
-            modal.innerHTML = `
-        <div class="modal-content-producto">
-            <div class="modal-header">
-                <h2>${producto.nombre}</h2>
-                <button class="close-btn" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="galeria-container">
-                    ${galeriaHTML}
-                    ${navegacionHTML}
+        modal.innerHTML = `
+            <div class="modal-content-producto">
+                <div class="modal-header">
+                    <h2>${producto.nombre}</h2>
+                    <button class="close-btn" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
                 </div>
-                <div class="producto-detalle">
-                    ${producto.descripcion ? `<p class="producto-descripcion">${producto.descripcion}</p>` : ''}
-                    ${opcionesPreciosHTML}
-                    <div style="margin-top: 20px;">
-                        <button class="btn-pdf" onclick="consultarWhatsApp('${producto.nombre}')">
-                            <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
-                        </button>
+                <div class="modal-body">
+                    <div class="galeria-container">
+                        ${galeriaHTML}
+                        ${navegacionHTML}
+                    </div>
+                    <div class="producto-detalle">
+                        ${producto.descripcion ? 
+                            `<p class="producto-descripcion">${producto.descripcion}</p>` : ''}
+                        ${opcionesHTML}
+                        <div style="margin-top: 20px;">
+                            <button class="btn-pdf" onclick="consultarWhatsApp('${producto.nombre}')">
+                                <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
-            document.body.appendChild(modal);
+        document.body.appendChild(modal);
+    }
 
-            // Guardar las imágenes en una variable global para el fullscreen
-            window.currentProductImages = imagenesUnicas.length > 0 ? imagenesUnicas : [imagenPorDefecto];
-            window.currentProductName = producto.nombre;
+    function changeGalleryImage(index) {
+        const modal = document.querySelector('.modal-backdrop');
+        if (!modal) return;
 
-            // Configurar navegación de galería
-            if (imagenesUnicas.length > 1) {
-                const dots = modal.querySelectorAll('.galeria-dot');
-                const images = modal.querySelectorAll('.galeria-img');
+        const images = modal.querySelectorAll('.galeria-img');
+        const dots = modal.querySelectorAll('.galeria-dot');
 
-                dots.forEach((dot, index) => {
-                    dot.addEventListener('click', () => {
-                        cambiarImagenGaleria(index);
-                    });
-                });
-            }
-        }
+        images.forEach(img => img.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
 
-        // NUEVAS FUNCIONES PARA FULLSCREEN
-        function abrirFullscreenGaleria(indiceInicial = 0) {
-            const imagenes = window.currentProductImages || [];
-            const nombreProducto = window.currentProductName || 'Producto';
+        if (images[index]) images[index].classList.add('active');
+        if (dots[index]) dots[index].classList.add('active');
+    }
 
-            if (imagenes.length === 0) return;
-
-            // Crear modal fullscreen
-            const fullscreenModal = document.createElement('div');
-            fullscreenModal.className = 'fullscreen-modal';
-            fullscreenModal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.95);
-        z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    `;
-
-            // Contenido del carrusel fullscreen
-            fullscreenModal.innerHTML = `
-        <div class="fullscreen-header" style="position: absolute; top: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; color: white; z-index: 10001;">
-            <div class="image-counter" style="font-size: 16px;">
-                ${indiceInicial + 1} / ${imagenes.length}
-            </div>
-            <button class="close-fullscreen" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">
-                &times;
-            </button>
-        </div>
+    // =================== FUNCIONES DE GALERÍA FULLSCREEN ===================
+    function openFullscreenGallery(indiceInicial = 0) {
+        const imagenes = APP_STATE.currentProductImages.length > 0 ? 
+            APP_STATE.currentProductImages : 
+            APP_STATE.galeria.map(img => img.url);
         
-        <div class="fullscreen-content" style="position: relative; width: 90%; height: 80%; display: flex; justify-content: center; align-items: center;">
-            ${imagenes.map((img, index) => `
-                <img src="${img}" 
-                     class="fullscreen-image ${index === indiceInicial ? 'active' : ''}" 
-                     alt="${nombreProducto}"
-                     style="max-width: 100%; max-height: 100%; object-fit: contain; display: ${index === indiceInicial ? 'block' : 'none'};">
-            `).join('')}
+        const nombre = APP_STATE.currentProductName || 'Galería';
+
+        if (imagenes.length === 0) return;
+
+        const fullscreenModal = document.createElement('div');
+        fullscreenModal.className = 'fullscreen-modal';
+        fullscreenModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        `;
+
+        fullscreenModal.innerHTML = `
+            <div class="fullscreen-header" style="position: absolute; top: 0; width: 100%; padding: 20px; 
+                   display: flex; justify-content: space-between; align-items: center; color: white; z-index: 10001;">
+                <div class="image-counter" style="font-size: 16px;">
+                    ${indiceInicial + 1} / ${imagenes.length}
+                </div>
+                <button class="close-fullscreen" style="background: none; border: none; color: white; 
+                        font-size: 24px; cursor: pointer;">
+                    &times;
+                </button>
+            </div>
+            
+            <div class="fullscreen-content" style="position: relative; width: 90%; height: 80%; 
+                   display: flex; justify-content: center; align-items: center;">
+                ${imagenes.map((img, index) => `
+                    <img src="${img}" 
+                         class="fullscreen-image ${index === indiceInicial ? 'active' : ''}" 
+                         alt="${nombre}"
+                         style="max-width: 100%; max-height: 100%; object-fit: contain; 
+                                display: ${index === indiceInicial ? 'block' : 'none'};">
+                `).join('')}
+                
+                ${imagenes.length > 1 ? `
+                    <button class="nav-btn prev-btn" onclick="navigateFullscreen(-1)" 
+                            style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); 
+                                   background: rgba(255,255,255,0.3); border: none; color: white; 
+                                   font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
+                        &#10094;
+                    </button>
+                    <button class="nav-btn next-btn" onclick="navigateFullscreen(1)" 
+                            style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); 
+                                   background: rgba(255,255,255,0.3); border: none; color: white; 
+                                   font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
+                        &#10095;
+                    </button>
+                ` : ''}
+            </div>
             
             ${imagenes.length > 1 ? `
-                <button class="nav-btn prev-btn" onclick="navigateFullscreen(-1)" 
-                        style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; color: white; font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
-                    &#10094;
-                </button>
-                <button class="nav-btn next-btn" onclick="navigateFullscreen(1)" 
-                        style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; color: white; font-size: 24px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;">
-                    &#10095;
-                </button>
+                <div class="fullscreen-thumbnails" style="position: absolute; bottom: 20px; 
+                       display: flex; gap: 10px; max-width: 90%; overflow-x: auto; padding: 10px;">
+                    ${imagenes.map((img, index) => `
+                        <img src="${img}" 
+                             class="thumbnail ${index === indiceInicial ? 'active' : ''}" 
+                             alt="Thumbnail ${index + 1}"
+                             onclick="goToFullscreenImage(${index})"
+                             style="width: 60px; height: 60px; object-fit: cover; cursor: pointer; 
+                                    border: 2px solid ${index === indiceInicial ? '#fff' : 'transparent'}; 
+                                    border-radius: 5px;">
+                    `).join('')}
+                </div>
             ` : ''}
-        </div>
-        
-        <div class="fullscreen-thumbnails" style="position: absolute; bottom: 20px; display: flex; gap: 10px; max-width: 90%; overflow-x: auto; padding: 10px;">
-            ${imagenes.map((img, index) => `
-                <img src="${img}" 
-                     class="thumbnail ${index === indiceInicial ? 'active' : ''}" 
-                     alt="Thumbnail ${index + 1}"
-                     onclick="goToFullscreenImage(${index})"
-                     style="width: 60px; height: 60px; object-fit: cover; cursor: pointer; border: 2px solid ${index === indiceInicial ? '#fff' : 'transparent'}; border-radius: 5px;">
-            `).join('')}
-        </div>
-    `;
+        `;
 
-            document.body.appendChild(fullscreenModal);
+        document.body.appendChild(fullscreenModal);
+        APP_STATE.currentFullscreenIndex = indiceInicial;
 
-            // Configurar eventos
-            const closeBtn = fullscreenModal.querySelector('.close-fullscreen');
-            closeBtn.addEventListener('click', () => {
+        // Configurar eventos
+        const closeBtn = fullscreenModal.querySelector('.close-fullscreen');
+        closeBtn.addEventListener('click', () => fullscreenModal.remove());
+
+        // Cerrar con ESC o flechas
+        const handleKeydown = (e) => {
+            if (e.key === 'Escape') {
                 fullscreenModal.remove();
-            });
+                document.removeEventListener('keydown', handleKeydown);
+            } else if (e.key === 'ArrowLeft') {
+                navigateFullscreen(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateFullscreen(1);
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
 
-            // Cerrar con ESC
-            const handleKeydown = (e) => {
-                if (e.key === 'Escape') {
-                    fullscreenModal.remove();
-                    document.removeEventListener('keydown', handleKeydown);
-                } else if (e.key === 'ArrowLeft') {
-                    navigateFullscreen(-1);
-                } else if (e.key === 'ArrowRight') {
-                    navigateFullscreen(1);
-                }
-            };
+        // Cerrar al hacer click fuera
+        fullscreenModal.addEventListener('click', (e) => {
+            if (e.target === fullscreenModal) {
+                fullscreenModal.remove();
+                document.removeEventListener('keydown', handleKeydown);
+            }
+        });
+    }
 
-            document.addEventListener('keydown', handleKeydown);
+    function navigateFullscreen(direction) {
+        const images = APP_STATE.currentProductImages;
+        if (images.length <= 1) return;
 
-            // Cerrar al hacer click fuera de la imagen
-            fullscreenModal.addEventListener('click', (e) => {
-                if (e.target === fullscreenModal) {
-                    fullscreenModal.remove();
-                    document.removeEventListener('keydown', handleKeydown);
-                }
-            });
+        let newIndex = APP_STATE.currentFullscreenIndex + direction;
+        if (newIndex < 0) newIndex = images.length - 1;
+        if (newIndex >= images.length) newIndex = 0;
+        
+        goToFullscreenImage(newIndex);
+    }
 
-            // Guardar estado actual
-            window.currentFullscreenIndex = indiceInicial;
-            window.fullscreenModal = fullscreenModal;
+    function goToFullscreenImage(index) {
+        const images = APP_STATE.currentProductImages;
+        if (index < 0 || index >= images.length) return;
+
+        const currentImage = document.querySelector('.fullscreen-image.active');
+        const newImage = document.querySelectorAll('.fullscreen-image')[index];
+        
+        if (currentImage) {
+            currentImage.classList.remove('active');
+            currentImage.style.display = 'none';
+        }
+        
+        if (newImage) {
+            newImage.classList.add('active');
+            newImage.style.display = 'block';
         }
 
-        // Función para navegar en el fullscreen
-        function navigateFullscreen(direction) {
-            const images = window.currentProductImages || [];
-            if (images.length <= 1) return;
-
-            let newIndex = window.currentFullscreenIndex + direction;
-
-            if (newIndex < 0) {
-                newIndex = images.length - 1;
-            } else if (newIndex >= images.length) {
-                newIndex = 0;
-            }
-
-            goToFullscreenImage(newIndex);
+        // Actualizar contador
+        const counter = document.querySelector('.image-counter');
+        if (counter) {
+            counter.textContent = `${index + 1} / ${images.length}`;
         }
 
-        // Función para ir a una imagen específica
-        function goToFullscreenImage(index) {
-            const images = window.currentProductImages || [];
-            if (index < 0 || index >= images.length) return;
+        // Actualizar thumbnails
+        document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+            thumb.classList.toggle('active', i === index);
+            thumb.style.borderColor = i === index ? '#fff' : 'transparent';
+        });
 
-            // Ocultar imagen actual
-            const currentImage = document.querySelector('.fullscreen-image.active');
-            if (currentImage) {
-                currentImage.classList.remove('active');
-                currentImage.style.display = 'none';
-            }
+        APP_STATE.currentFullscreenIndex = index;
+    }
 
-            // Mostrar nueva imagen
-            const newImage = document.querySelectorAll('.fullscreen-image')[index];
-            if (newImage) {
-                newImage.classList.add('active');
-                newImage.style.display = 'block';
-            }
+    // =================== FUNCIONES DE CONTACTO Y MODALES ===================
+    function consultarWhatsApp(nombreProducto) {
+        const mensaje = `Hola! Me interesa el producto: ${nombreProducto}. ¿Podrían darme más información?`;
+        const numeroWhatsApp = APP_STATE.contactoInfo?.telefono?.replace(/[^\d]/g, '') || '';
+        
+        if (numeroWhatsApp) {
+            const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        } else {
+            const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        }
+    }
 
-            // Actualizar contador
-            const counter = document.querySelector('.image-counter');
-            if (counter) {
-                counter.textContent = `${index + 1} / ${images.length}`;
-            }
-
-            // Actualizar thumbnails
-            document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
-                thumb.classList.toggle('active', i === index);
-                thumb.style.borderColor = i === index ? '#fff' : 'transparent';
-            });
-
-            window.currentFullscreenIndex = index;
+    function showContactoModal() {
+        if (!APP_STATE.contactoInfo) {
+            alert('Información de contacto no disponible');
+            return;
         }
 
-        // Función auxiliar para cambiar imagen en galería normal (MODIFICADA)
-        function cambiarImagenGaleria(indice) {
-            const modal = document.querySelector('.modal-backdrop');
-            if (!modal) return;
-
-            const images = modal.querySelectorAll('.galeria-img');
-            const dots = modal.querySelectorAll('.galeria-dot');
-
-            // Remover active de todas las imágenes y dots
-            images.forEach(img => img.classList.remove('active'));
-            dots.forEach(dot => dot.classList.remove('active'));
-
-            // Activar la imagen y dot correspondiente
-            if (images[indice]) images[indice].classList.add('active');
-            if (dots[indice]) dots[indice].classList.add('active');
+        let redesSociales = {};
+        try {
+            if (typeof APP_STATE.contactoInfo.redes_sociales === 'string') {
+                redesSociales = JSON.parse(APP_STATE.contactoInfo.redes_sociales);
+            } else if (APP_STATE.contactoInfo.redes_sociales) {
+                redesSociales = APP_STATE.contactoInfo.redes_sociales;
+            }
+        } catch (e) {
+            console.error('Error parsing redes_sociales:', e);
         }
 
-        // Función auxiliar para cambiar imagen en galería
-        function cambiarImagenGaleria(indice) {
-            const modal = document.querySelector('.modal-backdrop');
-            if (!modal) return;
+        const modal = createModal(`
+            <h3>Contacto</h3>
+            ${APP_STATE.contactoInfo.telefono ? 
+                `<p><i class="fas fa-phone"></i> ${APP_STATE.contactoInfo.telefono}</p>` : ''}
+            ${APP_STATE.contactoInfo.email ? 
+                `<p><i class="fas fa-envelope"></i> ${APP_STATE.contactoInfo.email}</p>` : ''}
+            ${APP_STATE.contactoInfo.direccion ? 
+                `<p><i class="fas fa-map-marker-alt"></i> ${APP_STATE.contactoInfo.direccion}</p>` : ''}
+            ${APP_STATE.contactoInfo.ubicacion_gps ? `
+                <p>
+                    <a href="${APP_STATE.contactoInfo.ubicacion_gps}" target="_blank" 
+                       style="color: var(--color-principal);">
+                        <i class="fas fa-map"></i> Ver en mapa
+                    </a>
+                </p>
+            ` : ''}
+            ${Object.keys(redesSociales).length > 0 ? `
+                <div style="margin-top: 15px;">
+                    <h4>Síguenos en:</h4>
+                    ${Object.entries(redesSociales).map(([red, url]) => `
+                        <a href="${url}" target="_blank" style="margin-right: 10px; font-size: 24px; 
+                               color: var(--color-principal);">
+                            <i class="fab fa-${red}"></i>
+                        </a>
+                    `).join('')}
+                </div>
+            ` : ''}
+        `);
+        
+        closeMenu();
+    }
 
-            const images = modal.querySelectorAll('.galeria-img');
-            const dots = modal.querySelectorAll('.galeria-dot');
-
-            // Remover active de todas las imágenes y dots
-            images.forEach(img => img.classList.remove('active'));
-            dots.forEach(dot => dot.classList.remove('active'));
-
-            // Activar la imagen y dot correspondiente
-            if (images[indice]) images[indice].classList.add('active');
-            if (dots[indice]) dots[indice].classList.add('active');
-        }
-
-        function consultarWhatsApp(nombreProducto) {
-            const mensaje = `Hola! Me interesa el producto: ${nombreProducto}. ¿Podrían darme más información?`;
-            const numeroWhatsApp = contactoInfo?.telefono?.replace(/[^\d]/g, '') || '';
-
-            if (numeroWhatsApp) {
-                const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-                window.open(url, '_blank');
-            } else {
-                // Fallback si no hay número configurado
-                const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-                window.open(url, '_blank');
-            }
-        }
-
-        function mostrarModalContacto() {
-            if (!contactoInfo) {
-                alert('Información de contacto no disponible');
-                return;
-            }
-
-            const modal = document.createElement('div');
-            modal.className = 'modal-backdrop';
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-
-            // Parsear las redes sociales si están en formato JSON
-            let redesSociales = {};
-            try {
-                if (typeof contactoInfo.redes_sociales === 'string') {
-                    redesSociales = JSON.parse(contactoInfo.redes_sociales);
-                } else if (contactoInfo.redes_sociales) {
-                    redesSociales = contactoInfo.redes_sociales;
-                }
-            } catch (e) {
-                console.error('Error parsing redes_sociales:', e);
-            }
-
-            modal.innerHTML = `
-        <div class="modal-content">
-          <h3>Contacto</h3>
-          ${contactoInfo.telefono ? `<p><i class="fas fa-phone"></i> ${contactoInfo.telefono}</p>` : ''}
-          ${contactoInfo.email ? `<p><i class="fas fa-envelope"></i> ${contactoInfo.email}</p>` : ''}
-          ${contactoInfo.direccion ? `<p><i class="fas fa-map-marker-alt"></i> ${contactoInfo.direccion}</p>` : ''}
-          ${contactoInfo.ubicacion_gps ? `
-            <p>
-              <a href="${contactoInfo.ubicacion_gps}" target="_blank" style="color: var(--color-principal);">
-                <i class="fas fa-map"></i> Ver en mapa
-              </a>
-            </p>
-          ` : ''}
-          ${Object.keys(redesSociales).length > 0 ? `
-            <div style="margin-top: 15px;">
-              <h4>Síguenos en:</h4>
-              ${Object.entries(redesSociales).map(([red, url]) => `
-                <a href="${url}" target="_blank" style="margin-right: 10px; font-size: 24px; color: var(--color-principal);">
-                  <i class="fab fa-${red}"></i>
-                </a>
-              `).join('')}
+    function showInformacionModal() {
+        const modal = createModal(`
+            <h3>Información</h3>
+            <p>Bienvenido a ${APP_STATE.brandingData?.nombre_negocio || 'Cande Helado y Café'}, 
+               tu lugar favorito para disfrutar de los mejores helados y cafés.</p>
+            
+            <h4 style="margin-top: 20px;">Horario de atención</h4>
+            <div id="horarioCompleto">
+                ${APP_STATE.horarios.map(horario => `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>${getNombreDia(horario.dia_semana)}:</span>
+                        <span>${horario.cerrado ? 'Cerrado' : `${horario.apertura} - ${horario.cierre}`}</span>
+                    </div>
+                `).join('')}
             </div>
-          ` : ''}
-          <button onclick="this.closest('.modal-backdrop').remove()" 
-                  style="margin-top: 15px; padding: 8px 16px; background: var(--color-principal); color: white; border: none; border-radius: 4px; width: 100%;">
-            Cerrar
-          </button>
-        </div>
-      `;
+        `);
+        
+        closeMenu();
+    }
 
-            document.body.appendChild(modal);
-            closeMenu();
-        }
+    function createModal(content) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
 
-        function mostrarModalInformacion() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-backdrop';
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
+        modal.innerHTML = `
+            <div class="modal-content">
+                ${content}
+                <button onclick="this.closest('.modal-backdrop').remove()" 
+                        style="margin-top: 15px; padding: 8px 16px; 
+                               background: var(--color-principal); color: white; 
+                               border: none; border-radius: 4px; width: 100%;">
+                    Cerrar
+                </button>
+            </div>
+        `;
 
-            modal.innerHTML = `
-        <div class="modal-content">
-          <h3>Información</h3>
-          <p>Bienvenido a ${brandingData?.nombre_negocio || 'Cande Helado y Café'}, tu lugar favorito para disfrutar de los mejores helados y cafés.</p>
-          
-          <h4 style="margin-top: 20px;">Horario de atención</h4>
-          <div id="horarioCompleto">
-            ${horarios.map(horario => `
-              <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <span>${obtenerNombreDia(horario.dia_semana)}:</span>
-                <span>${horario.cerrado ? 'Cerrado' : `${horario.apertura} - ${horario.cierre}`}</span>
-              </div>
-            `).join('')}
-          </div>
-          
-          <button onclick="this.closest('.modal-backdrop').remove()" 
-                  style="margin-top: 15px; padding: 8px 16px; background: var(--color-principal); color: white; border: none; border-radius: 4px; width: 100%;">
-            Cerrar
-          </button>
-        </div>
-      `;
+        document.body.appendChild(modal);
+        return modal;
+    }
 
-            document.body.appendChild(modal);
-            closeMenu();
-        }
+    function closeAllModals() {
+        document.querySelectorAll('.modal-backdrop').forEach(modal => modal.remove());
+    }
 
-        function obtenerNombreDia(diaSemana) {
-            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-            return dias[diaSemana] || `Día ${diaSemana}`;
-        }
-
-        function compartirWhatsApp(event) {
+    // =================== FUNCIONES DE COMPARTIR ===================
+    function compartirWhatsApp(event) {
         if (event) event.stopPropagation();
-        const texto = `¡Mira la carta de ${brandingData?.nombre_negocio || 'Cande Helado y Café'}!`;
+        const texto = `¡Mira la carta de ${APP_STATE.brandingData?.nombre_negocio || 'Cande Helado y Café'}!`;
         const url = encodeURIComponent(window.location.href);
         window.open(`https://wa.me/?text=${texto} ${url}`, '_blank');
     }
@@ -2121,189 +2260,142 @@
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
     }
 
-    // function compartirInstagram(event) {
-    //     if (event) event.stopPropagation();
-    //     const url = encodeURIComponent(window.location.href);
-    //     // Instagram no tiene API directa para compartir, abrimos perfil
-    //     window.open(`https://www.instagram.com/`, '_blank');
-    // }
-
-        function compartirInstagram(event) {
-            if (event) event.stopPropagation();
-
-            // Parsear las redes sociales si están en formato JSON
-            let redesSociales = {};
-            try {
-                if (typeof contactoInfo?.redes_sociales === 'string') {
-                    redesSociales = JSON.parse(contactoInfo.redes_sociales);
-                } else if (contactoInfo?.redes_sociales) {
-                    redesSociales = contactoInfo.redes_sociales;
-                }
-            } catch (e) {
-                console.error('Error parsing redes_sociales:', e);
+    function compartirInstagram(event) {
+        if (event) event.stopPropagation();
+        
+        let redesSociales = {};
+        try {
+            if (typeof APP_STATE.contactoInfo?.redes_sociales === 'string') {
+                redesSociales = JSON.parse(APP_STATE.contactoInfo.redes_sociales);
+            } else if (APP_STATE.contactoInfo?.redes_sociales) {
+                redesSociales = APP_STATE.contactoInfo.redes_sociales;
             }
-
-            // Si tenemos URL de Instagram, abrirla
-            if (redesSociales.instagram) {
-                window.open(redesSociales.instagram, '_blank');
-            } else {
-                // Si no, mostrar un mensaje
-                alert('No tenemos información de Instagram en este momento. ¡Visítanos pronto!');
-            }
+        } catch (e) {
+            console.error('Error parsing redes_sociales:', e);
         }
 
-        function compartirRedes() {
-            // Esta función puede mostrar un modal con opciones de compartir
-            alert('Selecciona una red social para compartir');
+        if (redesSociales.instagram) {
+            window.open(redesSociales.instagram, '_blank');
+        } else {
+            alert('No tenemos información de Instagram en este momento. ¡Visítanos pronto!');
         }
+    }
 
-        // FUNCIÓN PARA GENERAR PDF
-        async function descargarPDF() {
-            try {
-                // Mostrar mensaje de carga
-                const loadingModal = document.createElement('div');
-                loadingModal.className = 'modal-backdrop';
-                loadingModal.innerHTML = `
-      <div class="modal-content" style="text-align: center;">
-        <h3>Descargando PDF</h3>
-        <p>Por favor espera mientras se descarga tu carta en PDF...</p>
-        <div class="loading">
-          <i class="fas fa-spinner"></i>
-        </div>
-      </div>
-    `;
-                document.body.appendChild(loadingModal);
+    function compartirRedes() {
+        alert('Selecciona una red social para compartir');
+    }
 
-                // URL del PDF ya generado
-                const pdfURL = 'menu-heladeria.pdf'; // Cambia esta ruta a la correcta
+    // =================== FUNCIONES DE PDF ===================
+    async function descargarPDF() {
+        try {
+            // Mostrar loading
+            const loadingModal = createModal(`
+                <h3>Descargando PDF</h3>
+                <p>Por favor espera mientras se descarga tu carta en PDF...</p>
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                </div>
+            `);
 
-                // Crear un enlace invisible para descargar el archivo
-                const link = document.createElement('a');
-                link.href = pdfURL;
-                link.download = 'Carta.pdf'; // Puedes personalizar el nombre del archivo
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            // URL del PDF (debes tener este archivo en tu servidor)
+            const pdfURL = 'menu-heladeria.pdf';
 
-                // Cerrar modal de carga después de un breve retraso
-                setTimeout(() => {
+            // Descargar archivo
+            const link = document.createElement('a');
+            link.href = pdfURL;
+            link.download = 'Carta_Cande_Helado_y_Cafe.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Cerrar loading después de 1 segundo
+            setTimeout(() => {
+                if (loadingModal && loadingModal.parentElement) {
                     loadingModal.remove();
-                }, 1000);
-
-            } catch (error) {
-                console.error('Error al descargar el PDF:', error);
-                alert('Error al descargar el PDF. Por favor, intenta nuevamente.');
-            }
-        }
-
-        // FUNCIÓN PRINCIPAL DE CARGA
-        async function cargarDatos() {
-            await cargarBranding();
-            await cargarHorarios();
-            await cargarContacto();
-            await cargarCategorias();
-            await cargarProductos();
-
-            // Actualizar el estado de horario cada minuto
-            setInterval(actualizarEstadoHorario, 60000);
-        }
-
-        // Scroll automático mejorado con mejor detección
-        window.addEventListener('scroll', () => {
-            const menuCompacto = document.getElementById('menuCompacto');
-
-            if (window.scrollY > 200) {
-                menuCompacto.style.display = 'flex';
-            } else {
-                menuCompacto.style.display = 'none';
-            }
-
-            // Activar categoría correspondiente solo en la pestaña de carta
-            if (currentTab === 'carta') {
-                const categoriaMenu = document.getElementById('categoriaMenu');
-                const sections = document.querySelectorAll('.seccion');
-                const categorias = categoriaMenu.querySelectorAll('.cate');
-
-                let current = '';
-
-                // Encontrar la sección más visible
-                sections.forEach(section => {
-                    const sectionTop = section.offsetTop - 150;
-                    const sectionBottom = sectionTop + section.offsetHeight;
-                    const scrollPosition = window.scrollY;
-
-                    if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-                        current = section.getAttribute('id');
-                    }
-                });
-
-                // Si no encontramos ninguna sección actual, usar la más cercana
-                if (!current && sections.length > 0) {
-                    let closest = sections[0];
-                    let closestDistance = Math.abs(sections[0].offsetTop - 150 - window.scrollY);
-
-                    sections.forEach(section => {
-                        const distance = Math.abs(section.offsetTop - 150 - window.scrollY);
-                        if (distance < closestDistance) {
-                            closest = section;
-                            closestDistance = distance;
-                        }
-                    });
-
-                    current = closest.getAttribute('id');
                 }
+            }, 1000);
 
-                // Actualizar categorías activas
-                categorias.forEach(cate => {
-                    cate.classList.remove('active');
-                    if (cate.dataset.target === current) {
-                        cate.classList.add('active');
-
-                        // Hacer scroll horizontal del menú de categorías para mantener visible la categoría activa
-                        const categoriaMenu = document.getElementById('categoriaMenu');
-                        const cateRect = cate.getBoundingClientRect();
-                        const menuRect = categoriaMenu.getBoundingClientRect();
-
-                        if (cateRect.left < menuRect.left || cateRect.right > menuRect.right) {
-                            cate.scrollIntoView({
-                                behavior: 'smooth',
-                                inline: 'center',
-                                block: 'nearest'
-                            });
-                        }
-                    }
-                });
-            }
-        });
-
-        // INICIALIZACIÓN
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarDatos();
-
-              cargarBranding();
-        cargarHorarios();
-        cargarContacto();
-        cargarCategorias();
-        cargarProductos();
-        });
-
-        // MANEJO DE ERRORES GLOBALES
-        window.addEventListener('error', (e) => {
-            console.error('Error en la aplicación:', e.error);
-        });
-
-        // SERVICE WORKER PARA CACHE (OPCIONAL)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => {
-                    console.log('Service Worker registration failed: ', err);
-                });
-            });
+        } catch (error) {
+            console.error('Error al descargar el PDF:', error);
+            alert('Error al descargar el PDF. Por favor, intenta nuevamente.');
         }
-    </script>
+    }
+
+    // =================== FUNCIONES UTILITARIAS ===================
+    function formatFecha(fecha) {
+        if (!fecha) return '';
+        const date = new Date(fecha);
+        return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    function getNombreDia(diaSemana) {
+        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        return dias[diaSemana] || `Día ${diaSemana}`;
+    }
+
+    function refreshCurrentTab() {
+        switch(APP_STATE.currentTab) {
+            case 'carta':
+                loadProductos();
+                break;
+            case 'eventos':
+                loadEventos();
+                break;
+            case 'galeria':
+                loadGaleria();
+                break;
+        }
+    }
+
+    // =================== INICIALIZAR APLICACIÓN ===================
+    // Esperar a que el DOM esté completamente cargado
+    document.addEventListener('DOMContentLoaded', () => {
+        // Pequeño delay para asegurar que todas las dependencias estén cargadas
+        setTimeout(initApp, 100);
+    });
+
+    // Manejo de errores global
+    window.addEventListener('error', (e) => {
+        console.error('Error en la aplicación:', e.error);
+        showError('Ha ocurrido un error. Por favor, recarga la página.');
+    });
+
+    // Service Worker (opcional)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('Service Worker registration failed: ', err);
+            });
+        });
+    }
+
+    // Hacer funciones disponibles globalmente
+    window.toggleMenu = toggleMenu;
+    window.closeMenu = closeMenu;
+    window.switchTab = switchTab;
+    window.compartirWhatsApp = compartirWhatsApp;
+    window.compartirFacebook = compartirFacebook;
+    window.compartirInstagram = compartirInstagram;
+    window.compartirRedes = compartirRedes;
+    window.descargarPDF = descargarPDF;
+    window.showContactoModal = showContactoModal;
+    window.showInformacionModal = showInformacionModal;
+    window.consultarWhatsApp = consultarWhatsApp;
+    window.showProductoDetalle = showProductoDetalle;
+    window.changeGalleryImage = changeGalleryImage;
+    window.openFullscreenGallery = openFullscreenGallery;
+    window.navigateFullscreen = navigateFullscreen;
+    window.goToFullscreenImage = goToFullscreenImage;
+
+</script>
 </body>
 
 </html>
+
 
 
 
