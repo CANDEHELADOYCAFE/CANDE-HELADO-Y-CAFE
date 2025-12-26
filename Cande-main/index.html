@@ -1035,233 +1035,242 @@
     let horarios = [];
 
         
-        // FUNCIONES DE NAVEGACIÓN Y MENÚ
-        function toggleMenu() {
-            const icon = document.getElementById('menuIcon');
-            icon.classList.toggle('fa-bars');
-            icon.classList.toggle('fa-times');
+         function toggleMenu() {
+        const icon = document.getElementById('menuIcon');
+        icon.classList.toggle('fa-bars');
+        icon.classList.toggle('fa-times');
 
-            const sideMenu = document.getElementById('sideMenu');
-            const overlay = document.querySelector('.overlay');
-            sideMenu.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.querySelector('.overlay');
+        sideMenu.classList.toggle('open');
+        overlay.classList.toggle('active');
+    }
 
+        
         function closeMenu() {
-            const sideMenu = document.getElementById('sideMenu');
-            const overlay = document.querySelector('.overlay');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.querySelector('.overlay');
 
-            sideMenu.classList.remove('open');
-            overlay.classList.remove('active');
+        sideMenu.classList.remove('open');
+        overlay.classList.remove('active');
 
-            // Restaurar el icono del menú
-            const icon = document.getElementById('menuIcon');
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
+        const icon = document.getElementById('menuIcon');
+        icon.classList.remove('fa-times');
+        icon.classList.add('fa-bars');
+    }
+          function switchTab(tabName) {
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        const targetTab = document.getElementById(tabName + '-tab');
+        if (targetTab) {
+            targetTab.classList.add('active');
         }
 
-        function switchTab(tabName) {
-            // Ocultar todas las pestañas
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('active');
-            });
-
-            // Remover active de todos los nav-links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            // Mostrar la pestaña seleccionada
-            const targetTab = document.getElementById(tabName + '-tab');
-            if (targetTab) {
-                targetTab.classList.add('active');
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            if (link.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                link.classList.add('active');
             }
+        });
 
-            // Activar el nav-link correspondiente
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                if (link.textContent.toLowerCase().includes(tabName.toLowerCase())) {
-                    link.classList.add('active');
-                }
-            });
+        currentTab = tabName;
+        closeMenu();
 
-            currentTab = tabName;
-            closeMenu();
-
-            // Cargar datos según la pestaña
-            if (tabName === 'carta' && productos.length === 0) {
-                cargarProductos();
-            } else if (tabName === 'eventos' && eventos.length === 0) {
-                cargarEventos();
-            } else if (tabName === 'galeria' && galeria.length === 0) {
-                cargarGaleria();
-            }
+        if (tabName === 'carta' && productos.length === 0) {
+            cargarProductos();
+        } else if (tabName === 'eventos' && eventos.length === 0) {
+            cargarEventos();
+        } else if (tabName === 'galeria' && galeria.length === 0) {
+            cargarGaleria();
         }
+    }
 
-        // FUNCIONES DE CARGA DE DATOS
-        async function cargarBranding() {
-            try {
-                const { data, error } = await supabase
-                    .from('branding')
-                    .select('*')
-                    .limit(1)
-                    .single();
+       async function cargarBranding() {
+        try {
+            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { data, error } = await supabase
+                .from('branding')
+                .select('*')
+                .limit(1)
+                .single();
 
-                if (error) {
-                    console.error('Error cargando branding:', error);
-                    return;
-                }
-
-                brandingData = data;
-
-                // Aplicar branding
-                if (brandingData) {
-                    // Actualizar logo
-                    const perfilLogo = document.getElementById('perfilLogo');
-                    if (brandingData.logo_url) {
-                        perfilLogo.innerHTML =
-                            `<img src="${brandingData.logo_url}" alt="${brandingData.nombre_negocio}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-                    } else {
-                        perfilLogo.textContent = brandingData.nombre_negocio.charAt(0);
-                    }
-
-                    // Actualizar banner
-                    if (brandingData.banner_url) {
-                        document.getElementById('perfilHeader').style.backgroundImage =
-                            `url('${brandingData.banner_url}')`;
-                    }
-
-                    // Actualizar nombre en todos los lugares
-                    document.getElementById('perfilNombre').textContent = brandingData.nombre_negocio;
-                    document.getElementById('menuCompacto').textContent = brandingData.nombre_negocio;
-                    document.getElementById('menuNombreNegocio').textContent = brandingData.nombre_negocio;
-
-                    // Actualizar colores CSS variables
-                    if (brandingData.color_principal) {
-                        document.documentElement.style.setProperty('--color-principal', brandingData.color_principal);
-                    }
-                    if (brandingData.color_secundario) {
-                        document.documentElement.style.setProperty('--color-secundario', brandingData.color_secundario);
-                    }
-                }
-            } catch (error) {
+            if (error) {
                 console.error('Error cargando branding:', error);
-            }
-        }
-
-        async function cargarHorarios() {
-            try {
-                const { data, error } = await supabase
-                    .from('horarios')
-                    .select('*')
-                    .order('dia_semana');
-
-                if (error) {
-                    console.error('Error cargando horarios:', error);
-                    return;
-                }
-
-                horarios = data || [];
-                actualizarEstadoHorario();
-            } catch (error) {
-                console.error('Error cargando horarios:', error);
-            }
-        }
-
-        function actualizarEstadoHorario() {
-            const ahora = new Date();
-            const diaSemana = ahora.getDay(); // 0: Domingo, 1: Lunes, ..., 6: Sábado
-            const horaActual = ahora.getHours() + (ahora.getMinutes() / 60);
-
-            const horarioHoy = horarios.find(h => h.dia_semana === diaSemana);
-
-            if (!horarioHoy || horarioHoy.cerrado) {
-                document.getElementById('horarioInfo').innerHTML =
-                    `Hoy: <span class="estado-apertura estado-cerrado">CERRADO</span>`;
                 return;
             }
 
-            // Convertir horas de apertura/cierre a formato decimal para comparación
-            const [aperturaHoras, aperturaMinutos] = horarioHoy.apertura.split(':').map(Number);
-            const [cierreHoras, cierreMinutos] = horarioHoy.cierre.split(':').map(Number);
+            brandingData = data;
 
-            const aperturaDecimal = aperturaHoras + (aperturaMinutos / 60);
-            const cierreDecimal = cierreHoras + (cierreMinutos / 60);
+            if (brandingData) {
+                const perfilLogo = document.getElementById('perfilLogo');
+                if (brandingData.logo_url) {
+                    perfilLogo.innerHTML =
+                        `<img src="${brandingData.logo_url}" alt="${brandingData.nombre_negocio}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                } else {
+                    perfilLogo.textContent = brandingData.nombre_negocio.charAt(0);
+                }
 
-            const estaAbierto = horaActual >= aperturaDecimal && horaActual < cierreDecimal;
+                if (brandingData.banner_url) {
+                    document.getElementById('perfilHeader').style.backgroundImage =
+                        `url('${brandingData.banner_url}')`;
+                }
 
-            const estadoHTML = estaAbierto
-                ? `<span class="estado-apertura estado-abierto">ABIERTO</span>`
-                : `<span class="estado-apertura estado-cerrado">CERRADO</span>`;
+                document.getElementById('perfilNombre').textContent = brandingData.nombre_negocio;
+                document.getElementById('menuCompacto').textContent = brandingData.nombre_negocio;
+                document.getElementById('menuNombreNegocio').textContent = brandingData.nombre_negocio;
 
+                if (brandingData.color_principal) {
+                    document.documentElement.style.setProperty('--color-principal', brandingData.color_principal);
+                }
+                if (brandingData.color_secundario) {
+                    document.documentElement.style.setProperty('--color-secundario', brandingData.color_secundario);
+                }
+            }
+        } catch (error) {
+            console.error('Error cargando branding:', error);
+        }
+    }
+
+     async function cargarHorarios() {
+        try {
+            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { data, error } = await supabase
+                .from('horarios')
+                .select('*')
+                .order('dia_semana');
+
+            if (error) {
+                console.error('Error cargando horarios:', error);
+                return;
+            }
+
+            horarios = data || [];
+            actualizarEstadoHorario();
+        } catch (error) {
+            console.error('Error cargando horarios:', error);
+        }
+    }
+
+       function actualizarEstadoHorario() {
+        const ahora = new Date();
+        const diaSemana = ahora.getDay();
+        const horaActual = ahora.getHours() + (ahora.getMinutes() / 60);
+
+        const horarioHoy = horarios.find(h => h.dia_semana === diaSemana);
+
+        if (!horarioHoy || horarioHoy.cerrado) {
             document.getElementById('horarioInfo').innerHTML =
-                `Horario: ${horarioHoy.apertura} - ${horarioHoy.cierre} ${estadoHTML}`;
+                `Hoy: <span class="estado-apertura estado-cerrado">CERRADO</span>`;
+            return;
         }
 
-        async function cargarContacto() {
-            try {
-                const { data, error } = await supabase
-                    .from('contacto')
-                    .select('*')
-                    .limit(1)
-                    .single();
+        const [aperturaHoras, aperturaMinutos] = horarioHoy.apertura.split(':').map(Number);
+        const [cierreHoras, cierreMinutos] = horarioHoy.cierre.split(':').map(Number);
 
-                if (error) {
-                    console.error('Error cargando contacto:', error);
-                    return;
-                }
+        const aperturaDecimal = aperturaHoras + (aperturaMinutos / 60);
+        const cierreDecimal = cierreHoras + (cierreMinutos / 60);
 
-                contactoInfo = data;
-            } catch (error) {
+        const estaAbierto = horaActual >= aperturaDecimal && horaActual < cierreDecimal;
+
+        const estadoHTML = estaAbierto
+            ? `<span class="estado-apertura estado-abierto">ABIERTO</span>`
+            : `<span class="estado-apertura estado-cerrado">CERRADO</span>`;
+
+        document.getElementById('horarioInfo').innerHTML =
+            `Horario: ${horarioHoy.apertura} - ${horarioHoy.cierre} ${estadoHTML}`;
+    }
+       async function cargarContacto() {
+        try {
+            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { data, error } = await supabase
+                .from('contacto')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error) {
                 console.error('Error cargando contacto:', error);
+                return;
             }
+
+            contactoInfo = data;
+        } catch (error) {
+            console.error('Error cargando contacto:', error);
         }
+    }
 
-        async function cargarCategorias() {
-            try {
-                const { data, error } = await supabase
-                    .from('categorias')
-                    .select('*')
-                    .order('id');
+    async function cargarCategorias() {
+        try {
+            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { data, error } = await supabase
+                .from('categorias')
+                .select('*')
+                .order('id');
 
-                if (error) {
-                    console.error('Error cargando categorías:', error);
-                    return;
-                }
-
-                categorias = data || [];
-                mostrarCategorias();
-            } catch (error) {
+            if (error) {
                 console.error('Error cargando categorías:', error);
-                mostrarCategoriasDefault();
+                return;
             }
+
+            categorias = data || [];
+            mostrarCategorias();
+        } catch (error) {
+            console.error('Error cargando categorías:', error);
+            mostrarCategoriasDefault();
         }
-
+    }
         async function cargarProductos() {
-            try {
-                const { data, error } = await supabase
-                    .from('productos')
-                    .select(`
-            *,
-            categorias(nombre, color_fondo, color_texto, icono)
-          `)
-                    .eq('activo', true)
-                    .order('orden', { ascending: true, nullsFirst: false })
-                    .order('id');
+        try {
+            const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+            
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            const { data, error } = await supabase
+                .from('productos')
+                .select(`
+                    *,
+                    categorias(nombre, color_fondo, color_texto, icono)
+                `)
+                .eq('activo', true)
+                .order('orden', { ascending: true, nullsFirst: false })
+                .order('id');
 
-                if (error) {
-                    console.error('Error cargando productos:', error);
-                    mostrarProductosDefault();
-                    return;
-                }
-
-                productos = data || [];
-                mostrarProductos();
-            } catch (error) {
+            if (error) {
                 console.error('Error cargando productos:', error);
                 mostrarProductosDefault();
+                return;
             }
+
+            productos = data || [];
+            mostrarProductos();
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+            mostrarProductosDefault();
         }
+    }
 
         async function cargarEventos() {
             try {
@@ -2099,19 +2108,25 @@
             return dias[diaSemana] || `Día ${diaSemana}`;
         }
 
-        // FUNCIONES PARA COMPARTIR
         function compartirWhatsApp(event) {
-            if (event) event.stopPropagation();
-            const texto = `¡Mira la carta de ${brandingData?.nombre_negocio || 'Cande Helado y Café'}!`;
-            const url = encodeURIComponent(window.location.href);
-            window.open(`https://wa.me/?text=${texto} ${url}`, '_blank');
-        }
+        if (event) event.stopPropagation();
+        const texto = `¡Mira la carta de ${brandingData?.nombre_negocio || 'Cande Helado y Café'}!`;
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://wa.me/?text=${texto} ${url}`, '_blank');
+    }
 
-        function compartirFacebook(event) {
-            if (event) event.stopPropagation();
-            const url = encodeURIComponent(window.location.href);
-            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
-        }
+    function compartirFacebook(event) {
+        if (event) event.stopPropagation();
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+    }
+
+    // function compartirInstagram(event) {
+    //     if (event) event.stopPropagation();
+    //     const url = encodeURIComponent(window.location.href);
+    //     // Instagram no tiene API directa para compartir, abrimos perfil
+    //     window.open(`https://www.instagram.com/`, '_blank');
+    // }
 
         function compartirInstagram(event) {
             if (event) event.stopPropagation();
@@ -2264,6 +2279,12 @@
         // INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', () => {
             cargarDatos();
+
+              cargarBranding();
+        cargarHorarios();
+        cargarContacto();
+        cargarCategorias();
+        cargarProductos();
         });
 
         // MANEJO DE ERRORES GLOBALES
@@ -2283,5 +2304,6 @@
 </body>
 
 </html>
+
 
 
