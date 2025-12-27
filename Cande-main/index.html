@@ -854,7 +854,7 @@
             <i class="fas fa-images"></i>
             <span>Galería</span>
         </div>
-        <div class="menu-item" onclick="mostrarModalContacto()">
+        <div class="menu-item" onclick="mostrarModalInformacion()">
             <i class="fas fa-phone"></i>
             <span>Contacto</span>
         </div>
@@ -2351,6 +2351,17 @@
         }
     }
 
+
+    // =================== FUNCIONES EN ESPAÑOL PARA COMPATIBILIDAD ===================
+function mostrarModalContacto() {
+    return showContactoModal();
+}
+
+function mostrarModalInformacion() {
+    return showInformacionModal();
+}
+
+
     // =================== INICIALIZAR APLICACIÓN ===================
     // Esperar a que el DOM esté completamente cargado
     document.addEventListener('DOMContentLoaded', () => {
@@ -2391,10 +2402,18 @@
     window.navigateFullscreen = navigateFullscreen;
     window.goToFullscreenImage = goToFullscreenImage;
 
+
+    // También agrégalas al objeto window para que sean accesibles globalmente
+window.mostrarModalContacto = mostrarModalContacto;
+window.mostrarModalInformacion = mostrarModalInformacion;
+
+
+    
 </script>
 </body>
 
 </html>
+
 
 
 
