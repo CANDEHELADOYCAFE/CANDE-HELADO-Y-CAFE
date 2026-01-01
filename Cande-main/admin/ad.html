@@ -763,1230 +763,1169 @@
     <!-- Load Supabase library -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Variables globales - declaradas antes de ser usadas
-        let productos = [];
-        let categorias = [];
-        let variantes = [];
-        let vistaActual = 'categorias';
-        let editandoCategoria = null;
-        let editandoProducto = null;
-        let imagenSubida = null;
-        let varianteCounter = 0;
-        let supabase = null;
+ <script>
+    // Variables globales
+    let productos = [];
+    let categorias = [];
+    let variantes = [];
+    let vistaActual = 'categorias';
+    let editandoCategoria = null;
+    let editandoProducto = null;
+    let imagenSubida = null;
+    let varianteCounter = 0;
 
-        // Función para inicializar Supabase cuando esté disponible
-        function initializeSupabase() {
-            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-                const supabaseUrl = "https://kntorhiruncbnhvvyint.supabase.co";
-                const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
+    // Credenciales de Supabase - solo constantes
+    const SUPABASE_URL = "https://kntorhiruncbnhvvyint.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtudG9yaGlydW5jYm5odnZ5aW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MTY1NjYsImV4cCI6MjA2ODM5MjU2Nn0.PpHPi0p0e_pdTloQip0X6-_NKG7KhHw89t4Yyrvm5ow";
 
-                try {
-                    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                    console.log('Supabase inicializado correctamente');
-                    return true;
-                } catch (error) {
-                    console.error('Error al inicializar Supabase:', error);
-                    return false;
-                }
-            }
-            return false;
+    // Función para crear cliente Supabase
+    function createSupabaseClient() {
+        try {
+            return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (error) {
+            console.error('Error al crear cliente Supabase:', error);
+            return null;
+        }
+    }
+
+    // Mostrar alertas
+    function mostrarAlerta(mensaje, tipo = 'info') {
+        const alertsContainer = document.getElementById('alerts');
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${tipo}`;
+
+        const icono = tipo === 'success' ? 'check-circle' :
+            tipo === 'error' ? 'exclamation-triangle' : 'info-circle';
+
+        alertDiv.innerHTML = `
+            <i class="bi bi-${icono}"></i>
+            ${mensaje}
+        `;
+
+        alertsContainer.appendChild(alertDiv);
+
+        // Auto-ocultar después de 5 segundos
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+
+    // Funciones para manejo de imágenes
+    function previsualizarImagen(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            mostrarAlerta('Por favor selecciona un archivo de imagen válido', 'error');
+            event.target.value = '';
+            return;
         }
 
-        // Mostrar alertas
-        function mostrarAlerta(mensaje, tipo = 'info') {
-            const alertsContainer = document.getElementById('alerts');
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${tipo}`;
-
-            const icono = tipo === 'success' ? 'check-circle' :
-                tipo === 'error' ? 'exclamation-triangle' : 'info-circle';
-
-            alertDiv.innerHTML = `
-                <i class="bi bi-${icono}"></i>
-                ${mensaje}
-            `;
-
-            alertsContainer.appendChild(alertDiv);
-
-            // Auto-ocultar después de 5 segundos
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
+        // Validar tamaño (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            mostrarAlerta('El archivo es demasiado grande. Máximo 5MB permitido', 'error');
+            event.target.value = '';
+            return;
         }
 
-        // Funciones para manejo de imágenes
-        function previsualizarImagen(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // Mostrar vista previa
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const preview = document.getElementById('imagen-preview');
+            const img = document.getElementById('preview-img');
+            img.src = e.target.result;
+            preview.style.display = 'block';
 
-            // Validar tipo de archivo
-            if (!file.type.startsWith('image/')) {
-                mostrarAlerta('Por favor selecciona un archivo de imagen válido', 'error');
-                event.target.value = '';
-                return;
-            }
-
-            // Validar tamaño (máximo 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                mostrarAlerta('El archivo es demasiado grande. Máximo 5MB permitido', 'error');
-                event.target.value = '';
-                return;
-            }
-
-            // Mostrar vista previa
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const preview = document.getElementById('imagen-preview');
-                const img = document.getElementById('preview-img');
-                img.src = e.target.result;
-                preview.style.display = 'block';
-
-                // Limpiar URL manual cuando se selecciona archivo
-                document.getElementById('producto-imagen').value = '';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function limpiarImagen() {
-            document.getElementById('producto-imagen-file').value = '';
+            // Limpiar URL manual cuando se selecciona archivo
             document.getElementById('producto-imagen').value = '';
-            document.getElementById('imagen-preview').style.display = 'none';
-            document.getElementById('upload-progress').style.display = 'none';
-            imagenSubida = null;
-        }
-
-        // Simulación de subida de imagen (ya que no podemos usar el storage real)
-        async function subirImagen(file) {
-            if (!file) return null;
-
-            try {
-                // Mostrar progreso
-                const progressDiv = document.getElementById('upload-progress');
-                const progressBar = document.getElementById('progress-bar');
-                const progressText = document.getElementById('progress-text');
-
-                progressDiv.style.display = 'block';
-                progressBar.style.width = '30%';
-                progressText.textContent = 'Subiendo imagen...';
-
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                progressBar.style.width = '80%';
-                progressText.textContent = 'Generando URL...';
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-                progressBar.style.width = '100%';
-                progressText.textContent = 'Imagen subida correctamente';
-
-                // Convertir a base64 para almacenar localmente
-                const reader = new FileReader();
-                return new Promise((resolve) => {
-                    reader.onload = function (e) {
-                        setTimeout(() => {
-                            progressDiv.style.display = 'none';
-                            resolve(e.target.result);
-                        }, 1000);
-                    };
-                    reader.readAsDataURL(file);
-                });
-
-            } catch (error) {
-                document.getElementById('upload-progress').style.display = 'none';
-                console.error('Error en subirImagen:', error);
-                throw error;
-            }
-        }
-
-        // Cargar datos iniciales
-        async function cargarDatos() {
-            try {
-                await Promise.all([
-                    cargarCategorias(),
-                    cargarProductos(),
-                    cargarVariantes()
-                ]);
-                console.log('Categorías cargadas:', categorias);
-                console.log('Productos cargados:', productos);
-                console.log('Variantes cargadas:', variantes);
-                mostrarDatos();
-
-                // Asegurar que el select esté siempre actualizado
-                if (categorias.length > 0) {
-                    cargarCategoriasSelect();
-                }
-            } catch (error) {
-                console.error('Error al cargar datos:', error);
-                mostrarAlerta('Error al cargar los datos: ' + error.message, 'error');
-            }
-        }
-
-        // Cargar categorías
-        async function cargarCategorias() {
-            try {
-                if (supabase) {
-                    const { data, error } = await supabase
-                        .from('categorias')
-                        .select('*')
-                        .order('nombre');
-
-                    if (error) throw error;
-                    categorias = data || [];
-                } else {
-                    // Usar datos locales si Supabase no está disponible
-                    categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
-                }
-            } catch (error) {
-                console.error('Error al cargar categorías:', error);
-                // En caso de error, usar datos locales simulados
-                categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
-            }
-        }
-
-        // Cargar productos con categorías
-        async function cargarProductos() {
-            try {
-                if (supabase) {
-                    const { data, error } = await supabase
-                        .from('productos')
-                        .select(`
-                            *,
-                            categoria:categorias(id, nombre)
-                        `)
-                        .order('nombre');
-
-                    if (error) throw error;
-                    productos = data || [];
-                } else {
-                    productos = JSON.parse(localStorage.getItem('productos') || '[]');
-                }
-            } catch (error) {
-                console.error('Error al cargar productos:', error);
-                // En caso de error, usar datos locales simulados
-                productos = JSON.parse(localStorage.getItem('productos') || '[]');
-            }
-        }
-
-        // Cargar variantes de productos
-        async function cargarVariantes() {
-            try {
-                if (supabase) {
-                    const { data, error } = await supabase
-                        .from('producto_variantes')
-                        .select('*')
-                        .order('producto_id, orden');
-
-                    if (error) throw error;
-                    variantes = data || [];
-                } else {
-                    variantes = JSON.parse(localStorage.getItem('variantes') || '[]');
-                }
-            } catch (error) {
-                console.error('Error al cargar variantes:', error);
-                // En caso de error, usar datos locales simulados
-                variantes = JSON.parse(localStorage.getItem('variantes') || '[]');
-            }
-        }
-
-        // Mostrar datos según la vista actual
-        function mostrarDatos() {
-            if (vistaActual === 'categorias') {
-                mostrarCategorias();
-            } else {
-                mostrarProductos();
-                // Asegurar que las categorías estén cargadas para el select
-                if (categorias.length > 0) {
-                    cargarCategoriasSelect();
-                }
-            }
-        }
-
-        // Mostrar categorías en tabla
-        function mostrarCategorias() {
-            const contenido = document.getElementById('contenido-categorias');
-
-            if (categorias.length === 0) {
-                contenido.innerHTML = '<div class="no-results"><i class="bi bi-inbox"></i><br>No hay categorías registradas</div>';
-                return;
-            }
-
-            let html = `
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>Productos</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            categorias.forEach(categoria => {
-                const productosEnCategoria = productos.filter(p => p.categoria_id === categoria.id).length;
-
-                html += `
-                    <tr>
-                        <td>${categoria.id}</td>
-                        <td><strong>${categoria.nombre}</strong></td>
-                        <td>${categoria.descripcion || 'Sin descripción'}</td>
-                        <td>${productosEnCategoria} producto(s)</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editarCategoria(${categoria.id})" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="eliminarCategoria(${categoria.id}, '${categoria.nombre.replace(/'/g, "\\'")}')" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table>';
-            contenido.innerHTML = html;
-        }
-
-        // Mostrar productos en tabla
-        function mostrarProductos() {
-            const contenido = document.getElementById('contenido-productos');
-
-            if (productos.length === 0) {
-                contenido.innerHTML = '<div class="no-results"><i class="bi bi-inbox"></i><br>No hay productos registrados</div>';
-                return;
-            }
-
-            let html = `
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Variantes</th>
-                            <th>Precio</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            productos.forEach(producto => {
-                const categoria = producto.categoria ? producto.categoria.nombre : 'Sin categoría';
-                const variantesProducto = variantes.filter(v => v.producto_id === producto.id && v.activo);
-                const numVariantes = variantesProducto.length;
-
-                let precioDisplay = 'Sin precio';
-                if (numVariantes > 0) {
-                    const precios = variantesProducto.map(v => parseFloat(v.precio)).sort((a, b) => a - b);
-                    const precioMin = precios[0];
-                    const precioMax = precios[precios.length - 1];
-
-                    if (precioMin === precioMax) {
-                        precioDisplay = `${precioMin.toLocaleString()}`;
-                    } else {
-                        precioDisplay = `${precioMin.toLocaleString()} - ${precioMax.toLocaleString()}`;
-                    }
-                }
-
-                html += `
-                    <tr>
-                        <td>${producto.id}</td>
-                        <td>
-                            <strong>${producto.nombre}</strong>
-                            ${producto.imagen ? '<br><small><i class="bi bi-image"></i> Con imagen</small>' : ''}
-                        </td>
-                        <td>${categoria}</td>
-                        <td>
-                            <span class="status-badge ${numVariantes > 0 ? 'status-active' : 'status-inactive'}">
-                                ${numVariantes} variante(s)
-                            </span>
-                        </td>
-                        <td class="precio-display">${precioDisplay}</td>
-                        <td>
-                            <button class="btn btn-info btn-sm" onclick="verVariantes(${producto.id})" title="Ver variantes">
-                                <i class="bi bi-layers"></i>
-                            </button>
-                            <button class="btn btn-warning btn-sm" onclick="editarProducto(${producto.id})" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${producto.id}, '${producto.nombre.replace(/'/g, "\\'")}')" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table>';
-            contenido.innerHTML = html;
-        }
-
-        // Funciones para manejo de variantes
-        function agregarVariante() {
-            varianteCounter++;
-            const container = document.getElementById('variantes-container');
-
-            const varianteDiv = document.createElement('div');
-            varianteDiv.className = 'variante-item';
-            varianteDiv.id = `variante-${varianteCounter}`;
-
-            varianteDiv.innerHTML = `
-                <input type="text" placeholder="Nombre de la variante (ej: Pequeño, Mediano)" 
-                       name="variante-nombre" class="variante-nombre" maxlength="100">
-                <input type="number" placeholder="Precio" name="variante-precio" 
-                       class="variante-precio" min="0" step="0.01">
-                <input type="url" placeholder="URL imagen (opcional)" 
-                       name="variante-imagen" class="variante-imagen" maxlength="500">
-                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarVariante(${varianteCounter})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            `;
-
-            container.appendChild(varianteDiv);
-        }
-
-        function eliminarVariante(id) {
-            const varianteDiv = document.getElementById(`variante-${id}`);
-            if (varianteDiv) {
-                varianteDiv.remove();
-            }
-        }
-
-        function cargarVariantesProducto(productoId) {
-            const container = document.getElementById('variantes-container');
-            container.innerHTML = '';
-
-            const variantesProducto = variantes.filter(v => v.producto_id === productoId);
-
-            if (variantesProducto.length === 0) {
-                // Agregar una variante por defecto
-                agregarVariante();
-            } else {
-                // Cargar variantes existentes
-                variantesProducto.forEach(variante => {
-                    varianteCounter++;
-                    const varianteDiv = document.createElement('div');
-                    varianteDiv.className = 'variante-item';
-                    varianteDiv.id = `variante-${varianteCounter}`;
-                    varianteDiv.setAttribute('data-variante-id', variante.id);
-
-                    varianteDiv.innerHTML = `
-                        <input type="text" placeholder="Nombre de la variante" 
-                               name="variante-nombre" class="variante-nombre" 
-                               value="${variante.nombre_variante}" maxlength="100">
-                        <input type="number" placeholder="Precio" name="variante-precio" 
-                               class="variante-precio" value="${variante.precio}" min="0" step="0.01">
-                        <input type="url" placeholder="URL imagen (opcional)" 
-                               name="variante-imagen" class="variante-imagen" 
-                               value="${variante.imagen || ''}" maxlength="500">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarVariante(${varianteCounter})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    `;
-
-                    container.appendChild(varianteDiv);
-                });
-            }
-        }
-
-        function verVariantes(productoId) {
-            const producto = productos.find(p => p.id === productoId);
-            if (!producto) return;
-
-            const variantesProducto = variantes.filter(v => v.producto_id === productoId && v.activo);
-
-            let contenido = `
-                <div class="form-container">
-                    <h3><i class="bi bi-layers"></i> Variantes de: ${producto.nombre}</h3>
-            `;
-
-            if (variantesProducto.length === 0) {
-                contenido += `
-                    <div class="no-results">
-                        <i class="bi bi-inbox"></i><br>
-                        Este producto no tiene variantes configuradas
-                    </div>
-                `;
-            } else {
-                contenido += `
-                    <table class="table" style="margin-top: 20px;">
-                        <thead>
-                            <tr>
-                                <th>Variante</th>
-                                <th>Precio</th>
-                                <th>Imagen</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                variantesProducto.forEach(variante => {
-                    const estadoBadge = variante.activo ?
-                        '<span class="status-badge status-active">Activa</span>' :
-                        '<span class="status-badge status-inactive">Inactiva</span>';
-
-                    const imagen = variante.imagen ?
-                        '<i class="bi bi-image text-success"></i>' :
-                        '<i class="bi bi-image text-muted"></i>';
-
-                    contenido += `
-                        <tr>
-                            <td><strong>${variante.nombre_variante}</strong></td>
-                            <td class="precio-desde">${parseFloat(variante.precio).toLocaleString()}</td>
-                            <td>${imagen}</td>
-                            <td>${estadoBadge}</td>
-                        </tr>
-                    `;
-                });
-
-                contenido += '</tbody></table>';
-            }
-
-            contenido += `
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button class="btn btn-warning" onclick="editarProducto(${productoId}); cerrarModal('info');">
-                            <i class="bi bi-pencil"></i> Editar Producto y Variantes
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // Crear modal temporal
-            const modal = document.createElement('div');
-            modal.id = 'modal-info';
-            modal.className = 'modal show';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Información del Producto</h3>
-                        <button class="modal-close" onclick="cerrarModal('info')">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        ${contenido}
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            // Cerrar al clickear fuera
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    cerrarModal('info');
-                }
-            });
-        }
-
-        // Cambiar vista
-        function cambiarVista(vista) {
-            vistaActual = vista;
-
-            // Actualizar pestañas
-            document.querySelectorAll('.nav-tabs a').forEach(a => a.classList.remove('active'));
-            document.getElementById(`tab-${vista}`).classList.add('active');
-
-            // Mostrar/ocultar contenido
-            if (vista === 'categorias') {
-                document.getElementById('vista-categorias').style.display = 'block';
-                document.getElementById('vista-productos').style.display = 'none';
-            } else {
-                document.getElementById('vista-categorias').style.display = 'none';
-                document.getElementById('vista-productos').style.display = 'block';
-            }
-
-            mostrarDatos();
-        }
-
-        // Filtros
-        function filtrarCategorias() {
-            const filtro = document.getElementById('buscar-categoria').value.toLowerCase();
-            const filas = document.querySelectorAll('#contenido-categorias tbody tr');
-
-            filas.forEach(fila => {
-                const texto = fila.textContent.toLowerCase();
-                fila.style.display = texto.includes(filtro) ? '' : 'none';
-            });
-        }
-
-        function filtrarProductos() {
-            const filtro = document.getElementById('buscar-producto').value.toLowerCase();
-            const filas = document.querySelectorAll('#contenido-productos tbody tr');
-
-            filas.forEach(fila => {
-                const texto = fila.textContent.toLowerCase();
-                fila.style.display = texto.includes(filtro) ? '' : 'none';
-            });
-        }
-
-        // Cargar categorías en select
-        function cargarCategoriasSelect() {
-            const select = document.getElementById('producto-categoria');
-
-            if (!select) {
-                console.error('No se encontró el elemento select de categorías');
-                return;
-            }
-
-            // Limpiar opciones existentes pero mantener la primera opción
-            select.innerHTML = '<option value="">Seleccionar categoría</option>';
-
-            console.log('Cargando categorías en select. Total categorías:', categorias.length);
-
-            if (categorias.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'No hay categorías disponibles';
-                option.disabled = true;
-                select.appendChild(option);
-                return;
-            }
-
-            // Añadir todas las categorías
-            categorias.forEach(categoria => {
-                const option = document.createElement('option');
-                option.value = categoria.id;
-                option.textContent = categoria.nombre;
-                select.appendChild(option);
-            });
-
-            console.log('Select actualizado con', select.options.length - 1, 'categorías');
-        }
-
-        // Modal handlers
-        function abrirModalCategoria(id = null) {
-            editandoCategoria = id;
-            const modal = document.getElementById('modal-categoria');
-            const titulo = document.getElementById('titulo-categoria');
-
-            if (id) {
-                titulo.textContent = 'Editar Categoría';
-                const categoria = categorias.find(c => c.id === id);
-
-                if (categoria) {
-                    document.getElementById('categoria-id').value = categoria.id;
-                    document.getElementById('categoria-nombre').value = categoria.nombre || '';
-                    document.getElementById('categoria-descripcion').value = categoria.descripcion || '';
-                } else {
-                    mostrarAlerta('Error: No se encontró la categoría', 'error');
-                    return;
-                }
-            } else {
-                titulo.textContent = 'Nueva Categoría';
-                document.getElementById('form-categoria').reset();
-                document.getElementById('categoria-id').value = '';
-            }
-
-            modal.classList.add('show');
-        }
-
-        function abrirModalProducto(id = null) {
-            editandoProducto = id;
-            const modal = document.getElementById('modal-producto');
-            const titulo = document.getElementById('titulo-producto');
-
-            console.log('Abriendo modal producto, ID:', id);
-
-            // Cargar categorías en el select
-            cargarCategoriasSelect();
-
-            if (id) {
-                titulo.textContent = 'Editar Producto';
-                const producto = productos.find(p => p.id === id);
-
-                if (producto) {
-                    document.getElementById('producto-id').value = producto.id;
-                    document.getElementById('producto-nombre').value = producto.nombre || '';
-                    document.getElementById('producto-descripcion').value = producto.descripcion || '';
-                    document.getElementById('producto-imagen').value = producto.imagen || '';
-
-                    // Establecer la categoría
-                    setTimeout(() => {
-                        const selectCategoria = document.getElementById('producto-categoria');
-                        selectCategoria.value = producto.categoria_id || '';
-                    }, 100);
-
-                    // Mostrar vista previa si hay imagen
-                    if (producto.imagen) {
-                        const preview = document.getElementById('imagen-preview');
-                        const img = document.getElementById('preview-img');
-                        img.src = producto.imagen;
-                        preview.style.display = 'block';
-                    }
-
-                    // Cargar variantes del producto
-                    cargarVariantesProducto(id);
-                } else {
-                    mostrarAlerta('Error: No se encontró el producto', 'error');
-                    return;
-                }
-            } else {
-                titulo.textContent = 'Nuevo Producto';
-                document.getElementById('form-producto').reset();
-                document.getElementById('producto-id').value = '';
-                document.getElementById('producto-categoria').value = '';
-                limpiarImagen();
-
-                // Agregar una variante por defecto para productos nuevos
-                document.getElementById('variantes-container').innerHTML = '';
-                agregarVariante();
-            }
-
-            modal.classList.add('show');
-        }
-
-        function cerrarModal(tipo) {
-            const modal = document.getElementById(`modal-${tipo}`);
-            if (modal) {
-                modal.classList.remove('show');
-
-                if (tipo === 'categoria') {
-                    editandoCategoria = null;
-                } else if (tipo === 'producto') {
-                    editandoProducto = null;
-                    limpiarImagen();
-                    varianteCounter = 0;
-                } else if (tipo === 'info') {
-                    // Remover modal temporal
-                    setTimeout(() => modal.remove(), 300);
-                }
-            }
-        }
-
-        // CRUD Categorías
-        async function guardarCategoria(event) {
-            event.preventDefault();
-
-            const datos = {
-                nombre: document.getElementById('categoria-nombre').value,
-                descripcion: document.getElementById('categoria-descripcion').value || null
-            };
-
-            // Only add ID for local storage
-            if (!supabase) {
-                datos.id = editandoCategoria || Date.now();
-            }
-
-            try {
-                if (editandoCategoria) {
-                    // Actualizar categoría existente
-                    if (supabase) {
-                        const { error } = await supabase
-                            .from('categorias')
-                            .update(datos)
-                            .eq('id', editandoCategoria);
-
-                        if (error) throw error;
-                    }
-
-                    // Actualizar localmente
-                    const index = categorias.findIndex(c => c.id === editandoCategoria);
-                    if (index !== -1) {
-                        categorias[index] = { ...categorias[index], ...datos, id: editandoCategoria };
-                    }
-
-                    mostrarAlerta('Categoría actualizada correctamente', 'success');
-                } else {
-                    // Crear nueva categoría
-                    if (supabase) {
-                        const { data, error } = await supabase
-                            .from('categorias')
-                            .insert([datos])
-                            .select()
-                            .single();
-
-                        if (error) throw error;
-                        datos.id = data.id; // Usar ID generado por la DB
-                    } else {
-                        // For local storage, use timestamp
-                        datos.id = Date.now();
-                    }
-
-                    // Agregar localmente
-                    categorias.push(datos);
-
-                    mostrarAlerta('Categoría creada correctamente', 'success');
-                }
-
-                // Guardar en localStorage como respaldo
-                localStorage.setItem('categorias', JSON.stringify(categorias));
-
-                cerrarModal('categoria');
-                await cargarCategorias();
-                mostrarCategorias();
-                cargarCategoriasSelect();
-
-            } catch (error) {
-                console.error('Error al guardar categoría:', error);
-                mostrarAlerta('Error al guardar la categoría: ' + error.message, 'error');
-            }
-        }
-
-        function editarCategoria(id) {
-            abrirModalCategoria(id);
-        }
-
-        async function eliminarCategoria(id, nombre) {
-            if (!confirm(`¿Estás seguro de que quieres eliminar la categoría "${nombre}"?`)) {
-                return;
-            }
-
-            try {
-                // Verificar si hay productos asociados
-                const productosAsociados = productos.filter(p => p.categoria_id === id);
-                if (productosAsociados.length > 0) {
-                    mostrarAlerta(`No se puede eliminar la categoría "${nombre}" porque tiene ${productosAsociados.length} producto(s) asociado(s)`, 'error');
-                    return;
-                }
-
-                if (supabase) {
-                    const { error } = await supabase
-                        .from('categorias')
-                        .delete()
-                        .eq('id', id);
-
-                    if (error) throw error;
-                }
-
-                // Eliminar localmente
-                categorias = categorias.filter(c => c.id !== id);
-                localStorage.setItem('categorias', JSON.stringify(categorias));
-
-                mostrarAlerta('Categoría eliminada correctamente', 'success');
-                await cargarCategorias();
-                mostrarCategorias();
-                cargarCategoriasSelect();
-
-            } catch (error) {
-                console.error('Error al eliminar categoría:', error);
-                mostrarAlerta('Error al eliminar la categoría: ' + error.message, 'error');
-            }
-        }
-
-      // CRUD Productos con Variantes - VERSIÓN CORREGIDA
-async function guardarProducto(event) {
-    event.preventDefault();
-
-    try {
-        let imagenUrl = document.getElementById('producto-imagen').value || null;
-
-        // Verificar si hay un archivo seleccionado para subir
-        const fileInput = document.getElementById('producto-imagen-file');
-        if (fileInput.files && fileInput.files[0]) {
-            mostrarAlerta('Subiendo imagen...', 'info');
-            imagenUrl = await subirImagen(fileInput.files[0]);
-        }
-
-        // Obtener variantes del formulario ANTES de crear el producto
-        const variantesFormulario = obtenerVariantesFormulario();
-        console.log('Variantes del formulario:', variantesFormulario);
-
-        // Calcular precio base del producto (precio mínimo de las variantes)
-        let precioBase = 0;
-        if (variantesFormulario.length > 0) {
-            const precios = variantesFormulario.map(v => parseFloat(v.precio));
-            precioBase = Math.min(...precios);
-        }
-
-        // Obtener datos del producto
-        const categoriaSeleccionada = document.getElementById('producto-categoria').value;
-        const datosProducto = {
-            nombre: document.getElementById('producto-nombre').value,
-            categoria_id: categoriaSeleccionada ? parseInt(categoriaSeleccionada) : null,
-            descripcion: document.getElementById('producto-descripcion').value || null,
-            imagen: imagenUrl,
-            precio: precioBase // ✅ Ahora incluimos el precio base
         };
+        reader.readAsDataURL(file);
+    }
 
-        // Only add ID for local storage, let Supabase auto-generate
-        if (!supabase) {
-            datosProducto.id = editandoProducto || Date.now();
+    function limpiarImagen() {
+        document.getElementById('producto-imagen-file').value = '';
+        document.getElementById('producto-imagen').value = '';
+        document.getElementById('imagen-preview').style.display = 'none';
+        document.getElementById('upload-progress').style.display = 'none';
+        imagenSubida = null;
+    }
+
+    // Simulación de subida de imagen
+    async function subirImagen(file) {
+        if (!file) return null;
+
+        try {
+            // Mostrar progreso
+            const progressDiv = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '30%';
+            progressText.textContent = 'Subiendo imagen...';
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            progressBar.style.width = '80%';
+            progressText.textContent = 'Generando URL...';
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Imagen subida correctamente';
+
+            // Convertir a base64 para almacenar localmente
+            const reader = new FileReader();
+            return new Promise((resolve) => {
+                reader.onload = function (e) {
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        resolve(e.target.result);
+                    }, 1000);
+                };
+                reader.readAsDataURL(file);
+            });
+
+        } catch (error) {
+            document.getElementById('upload-progress').style.display = 'none';
+            console.error('Error en subirImagen:', error);
+            throw error;
         }
+    }
 
-        console.log('Datos del producto a guardar:', datosProducto);
+    // Cargar datos iniciales
+    async function cargarDatos() {
+        try {
+            await Promise.all([
+                cargarCategorias(),
+                cargarProductos(),
+                cargarVariantes()
+            ]);
+            console.log('Categorías cargadas:', categorias);
+            console.log('Productos cargados:', productos);
+            console.log('Variantes cargadas:', variantes);
+            mostrarDatos();
 
-        let productoId;
+            // Asegurar que el select esté siempre actualizado
+            if (categorias.length > 0) {
+                cargarCategoriasSelect();
+            }
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+            mostrarAlerta('Error al cargar los datos: ' + error.message, 'error');
+        }
+    }
 
-        if (editandoProducto) {
-            // Actualizar producto existente
+    // Cargar categorías
+    async function cargarCategorias() {
+        try {
+            const supabase = createSupabaseClient();
             if (supabase) {
-                const { error } = await supabase
-                    .from('productos')
-                    .update(datosProducto)
-                    .eq('id', editandoProducto);
+                const { data, error } = await supabase
+                    .from('categorias')
+                    .select('*')
+                    .order('nombre');
 
                 if (error) throw error;
+                categorias = data || [];
+            } else {
+                // Usar datos locales si Supabase no está disponible
+                categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
             }
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            // En caso de error, usar datos locales simulados
+            categorias = JSON.parse(localStorage.getItem('categorias') || '[]');
+        }
+    }
 
-            // Actualizar localmente
-            const index = productos.findIndex(p => p.id === editandoProducto);
-            if (index !== -1) {
-                productos[index] = { ...productos[index], ...datosProducto };
-            }
-
-            productoId = editandoProducto;
-            console.log('Producto actualizado correctamente');
-        } else {
-            // Crear nuevo producto
+    // Cargar productos con categorías
+    async function cargarProductos() {
+        try {
+            const supabase = createSupabaseClient();
             if (supabase) {
                 const { data, error } = await supabase
                     .from('productos')
-                    .insert([datosProducto])
-                    .select()
-                    .single();
+                    .select(`
+                        *,
+                        categoria:categorias(id, nombre)
+                    `)
+                    .order('nombre');
 
                 if (error) throw error;
-                productoId = data.id;
-                datosProducto.id = productoId;
+                productos = data || [];
             } else {
-                // For local storage, use timestamp
-                datosProducto.id = Date.now();
-                productoId = datosProducto.id;
+                productos = JSON.parse(localStorage.getItem('productos') || '[]');
             }
-
-            productos.push(datosProducto);
-            console.log('Producto creado correctamente, ID:', productoId);
+        } catch (error) {
+            console.error('Error al cargar productos:', error);
+            // En caso de error, usar datos locales simulados
+            productos = JSON.parse(localStorage.getItem('productos') || '[]');
         }
-
-        // Guardar variantes
-        if (variantesFormulario.length > 0) {
-            await guardarVariantesProducto(productoId, variantesFormulario);
-        }
-
-        // Guardar en localStorage como respaldo
-        localStorage.setItem('productos', JSON.stringify(productos));
-        localStorage.setItem('variantes', JSON.stringify(variantes));
-
-        mostrarAlerta('Producto y variantes guardados correctamente', 'success');
-        cerrarModal('producto');
-
-        // Recargar datos
-        await cargarDatos();
-        mostrarProductos();
-
-    } catch (error) {
-        console.error('Error al guardar producto:', error);
-        mostrarAlerta('Error al guardar el producto: ' + error.message, 'error');
-    }
-}
-
-// Función auxiliar para validar variantes antes de guardar
-function validarVariantes() {
-    const variantesItems = document.querySelectorAll('.variante-item');
-    
-    if (variantesItems.length === 0) {
-        mostrarAlerta('Debes agregar al menos una variante al producto', 'error');
-        return false;
     }
 
-    let variantesValidas = 0;
-    
-    variantesItems.forEach(item => {
-        const nombre = item.querySelector('.variante-nombre').value.trim();
-        const precio = item.querySelector('.variante-precio').value;
-        
-        if (nombre && precio && parseFloat(precio) > 0) {
-            variantesValidas++;
-        }
-    });
+    // Cargar variantes de productos
+    async function cargarVariantes() {
+        try {
+            const supabase = createSupabaseClient();
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('producto_variantes')
+                    .select('*')
+                    .order('producto_id, orden');
 
-    if (variantesValidas === 0) {
-        mostrarAlerta('Debes tener al menos una variante con nombre y precio válidos', 'error');
-        return false;
-    }
-
-    return true;
-}
-
-// Modificar también la función obtenerVariantesFormulario para mayor validación
-function obtenerVariantesFormulario() {
-    const variantesArray = [];
-    const variantesItems = document.querySelectorAll('.variante-item');
-
-    variantesItems.forEach((item, index) => {
-        const nombre = item.querySelector('.variante-nombre').value.trim();
-        const precio = item.querySelector('.variante-precio').value;
-        const imagen = item.querySelector('.variante-imagen').value.trim();
-        const varianteId = item.getAttribute('data-variante-id');
-
-        // ✅ Validación más estricta
-        if (nombre && precio && parseFloat(precio) > 0) {
-            const variante = {
-                nombre_variante: nombre,
-                precio: parseFloat(precio),
-                imagen: imagen || null,
-                orden: index + 1,
-                activo: true
-            };
-
-            // Only add ID for existing variants or when not using Supabase
-            if (varianteId) {
-                variante.id = parseInt(varianteId);
-            } else if (!supabase) {
-                variante.id = Date.now() + index;
+                if (error) throw error;
+                variantes = data || [];
+            } else {
+                variantes = JSON.parse(localStorage.getItem('variantes') || '[]');
             }
-
-            variantesArray.push(variante);
+        } catch (error) {
+            console.error('Error al cargar variantes:', error);
+            // En caso de error, usar datos locales simulados
+            variantes = JSON.parse(localStorage.getItem('variantes') || '[]');
         }
-    });
+    }
 
-    return variantesArray;
-}
+    // Mostrar datos según la vista actual
+    function mostrarDatos() {
+        if (vistaActual === 'categorias') {
+            mostrarCategorias();
+        } else {
+            mostrarProductos();
+            // Asegurar que las categorías estén cargadas para el select
+            if (categorias.length > 0) {
+                cargarCategoriasSelect();
+            }
+        }
+    }
 
-        function obtenerVariantesFormulario() {
-            const variantesArray = [];
-            const variantesItems = document.querySelectorAll('.variante-item');
+    // Mostrar categorías en tabla
+    function mostrarCategorias() {
+        const contenido = document.getElementById('contenido-categorias');
 
-            variantesItems.forEach((item, index) => {
-                const nombre = item.querySelector('.variante-nombre').value.trim();
-                const precio = item.querySelector('.variante-precio').value;
-                const imagen = item.querySelector('.variante-imagen').value.trim();
-                const varianteId = item.getAttribute('data-variante-id');
+        if (categorias.length === 0) {
+            contenido.innerHTML = '<div class="no-results"><i class="bi bi-inbox"></i><br>No hay categorías registradas</div>';
+            return;
+        }
 
-                if (nombre && precio) {
-                    const variante = {
-                        nombre_variante: nombre,
-                        precio: parseFloat(precio),
-                        imagen: imagen || null,
-                        orden: index + 1,
-                        activo: true
-                    };
+        let html = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Productos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
 
-                    // Only add ID for existing variants or when not using Supabase
-                    if (varianteId) {
-                        variante.id = parseInt(varianteId);
-                    } else if (!supabase) {
-                        variante.id = Date.now() + index;
-                    }
+        categorias.forEach(categoria => {
+            const productosEnCategoria = productos.filter(p => p.categoria_id === categoria.id).length;
 
-                    variantesArray.push(variante);
+            html += `
+                <tr>
+                    <td>${categoria.id}</td>
+                    <td><strong>${categoria.nombre}</strong></td>
+                    <td>${categoria.descripcion || 'Sin descripción'}</td>
+                    <td>${productosEnCategoria} producto(s)</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="editarCategoria(${categoria.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarCategoria(${categoria.id}, '${categoria.nombre.replace(/'/g, "\\'")}')" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        contenido.innerHTML = html;
+    }
+
+    // Mostrar productos en tabla
+    function mostrarProductos() {
+        const contenido = document.getElementById('contenido-productos');
+
+        if (productos.length === 0) {
+            contenido.innerHTML = '<div class="no-results"><i class="bi bi-inbox"></i><br>No hay productos registrados</div>';
+            return;
+        }
+
+        let html = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Variantes</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        productos.forEach(producto => {
+            const categoria = producto.categoria ? producto.categoria.nombre : 'Sin categoría';
+            const variantesProducto = variantes.filter(v => v.producto_id === producto.id && v.activo);
+            const numVariantes = variantesProducto.length;
+
+            let precioDisplay = 'Sin precio';
+            if (numVariantes > 0) {
+                const precios = variantesProducto.map(v => parseFloat(v.precio)).sort((a, b) => a - b);
+                const precioMin = precios[0];
+                const precioMax = precios[precios.length - 1];
+
+                if (precioMin === precioMax) {
+                    precioDisplay = `${precioMin.toLocaleString()}`;
+                } else {
+                    precioDisplay = `${precioMin.toLocaleString()} - ${precioMax.toLocaleString()}`;
                 }
+            }
+
+            html += `
+                <tr>
+                    <td>${producto.id}</td>
+                    <td>
+                        <strong>${producto.nombre}</strong>
+                        ${producto.imagen ? '<br><small><i class="bi bi-image"></i> Con imagen</small>' : ''}
+                    </td>
+                    <td>${categoria}</td>
+                    <td>
+                        <span class="status-badge ${numVariantes > 0 ? 'status-active' : 'status-inactive'}">
+                            ${numVariantes} variante(s)
+                        </span>
+                    </td>
+                    <td class="precio-display">${precioDisplay}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="verVariantes(${producto.id})" title="Ver variantes">
+                            <i class="bi bi-layers"></i>
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="editarProducto(${producto.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${producto.id}, '${producto.nombre.replace(/'/g, "\\'")}')" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        contenido.innerHTML = html;
+    }
+
+    // Funciones para manejo de variantes
+    function agregarVariante() {
+        varianteCounter++;
+        const container = document.getElementById('variantes-container');
+
+        const varianteDiv = document.createElement('div');
+        varianteDiv.className = 'variante-item';
+        varianteDiv.id = `variante-${varianteCounter}`;
+
+        varianteDiv.innerHTML = `
+            <input type="text" placeholder="Nombre de la variante (ej: Pequeño, Mediano)" 
+                   name="variante-nombre" class="variante-nombre" maxlength="100">
+            <input type="number" placeholder="Precio" name="variante-precio" 
+                   class="variante-precio" min="0" step="0.01">
+            <input type="url" placeholder="URL imagen (opcional)" 
+                   name="variante-imagen" class="variante-imagen" maxlength="500">
+            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarVariante(${varianteCounter})">
+                <i class="bi bi-trash"></i>
+            </button>
+        `;
+
+        container.appendChild(varianteDiv);
+    }
+
+    function eliminarVariante(id) {
+        const varianteDiv = document.getElementById(`variante-${id}`);
+        if (varianteDiv) {
+            varianteDiv.remove();
+        }
+    }
+
+    function cargarVariantesProducto(productoId) {
+        const container = document.getElementById('variantes-container');
+        container.innerHTML = '';
+
+        const variantesProducto = variantes.filter(v => v.producto_id === productoId);
+
+        if (variantesProducto.length === 0) {
+            // Agregar una variante por defecto
+            agregarVariante();
+        } else {
+            // Cargar variantes existentes
+            variantesProducto.forEach(variante => {
+                varianteCounter++;
+                const varianteDiv = document.createElement('div');
+                varianteDiv.className = 'variante-item';
+                varianteDiv.id = `variante-${varianteCounter}`;
+                varianteDiv.setAttribute('data-variante-id', variante.id);
+
+                varianteDiv.innerHTML = `
+                    <input type="text" placeholder="Nombre de la variante" 
+                           name="variante-nombre" class="variante-nombre" 
+                           value="${variante.nombre_variante}" maxlength="100">
+                    <input type="number" placeholder="Precio" name="variante-precio" 
+                           class="variante-precio" value="${variante.precio}" min="0" step="0.01">
+                    <input type="url" placeholder="URL imagen (opcional)" 
+                           name="variante-imagen" class="variante-imagen" 
+                           value="${variante.imagen || ''}" maxlength="500">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarVariante(${varianteCounter})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+
+                container.appendChild(varianteDiv);
+            });
+        }
+    }
+
+    function verVariantes(productoId) {
+        const producto = productos.find(p => p.id === productoId);
+        if (!producto) return;
+
+        const variantesProducto = variantes.filter(v => v.producto_id === productoId && v.activo);
+
+        let contenido = `
+            <div class="form-container">
+                <h3><i class="bi bi-layers"></i> Variantes de: ${producto.nombre}</h3>
+        `;
+
+        if (variantesProducto.length === 0) {
+            contenido += `
+                <div class="no-results">
+                    <i class="bi bi-inbox"></i><br>
+                    Este producto no tiene variantes configuradas
+                </div>
+            `;
+        } else {
+            contenido += `
+                <table class="table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Variante</th>
+                            <th>Precio</th>
+                            <th>Imagen</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            variantesProducto.forEach(variante => {
+                const estadoBadge = variante.activo ?
+                    '<span class="status-badge status-active">Activa</span>' :
+                    '<span class="status-badge status-inactive">Inactiva</span>';
+
+                const imagen = variante.imagen ?
+                    '<i class="bi bi-image text-success"></i>' :
+                    '<i class="bi bi-image text-muted"></i>';
+
+                contenido += `
+                    <tr>
+                        <td><strong>${variante.nombre_variante}</strong></td>
+                        <td class="precio-desde">${parseFloat(variante.precio).toLocaleString()}</td>
+                        <td>${imagen}</td>
+                        <td>${estadoBadge}</td>
+                    </tr>
+                `;
             });
 
-            return variantesArray;
+            contenido += '</tbody></table>';
         }
 
-        async function guardarVariantesProducto(productoId, variantesNuevas) {
-            try {
-                console.log('Guardando variantes para producto ID:', productoId);
+        contenido += `
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-warning" onclick="editarProducto(${productoId}); cerrarModal('info');">
+                        <i class="bi bi-pencil"></i> Editar Producto y Variantes
+                    </button>
+                </div>
+            </div>
+        `;
 
-                if (editandoProducto) {
-                    // Para productos existentes, eliminar variantes existentes
-                    if (supabase) {
-                        const { error: deleteError } = await supabase
-                            .from('producto_variantes')
-                            .delete()
-                            .eq('producto_id', productoId);
+        // Crear modal temporal
+        const modal = document.createElement('div');
+        modal.id = 'modal-info';
+        modal.className = 'modal show';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Información del Producto</h3>
+                    <button class="modal-close" onclick="cerrarModal('info')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    ${contenido}
+                </div>
+            </div>
+        `;
 
-                        if (deleteError) {
-                            console.warn('Error al eliminar variantes existentes:', deleteError);
-                        }
-                    }
+        document.body.appendChild(modal);
 
-                    // Eliminar localmente también
-                    variantes = variantes.filter(v => v.producto_id !== productoId);
+        // Cerrar al clickear fuera
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                cerrarModal('info');
+            }
+        });
+    }
+
+    // Cambiar vista
+    function cambiarVista(vista) {
+        vistaActual = vista;
+
+        // Actualizar pestañas
+        document.querySelectorAll('.nav-tabs a').forEach(a => a.classList.remove('active'));
+        document.getElementById(`tab-${vista}`).classList.add('active');
+
+        // Mostrar/ocultar contenido
+        if (vista === 'categorias') {
+            document.getElementById('vista-categorias').style.display = 'block';
+            document.getElementById('vista-productos').style.display = 'none';
+        } else {
+            document.getElementById('vista-categorias').style.display = 'none';
+            document.getElementById('vista-productos').style.display = 'block';
+        }
+
+        mostrarDatos();
+    }
+
+    // Filtros
+    function filtrarCategorias() {
+        const filtro = document.getElementById('buscar-categoria').value.toLowerCase();
+        const filas = document.querySelectorAll('#contenido-categorias tbody tr');
+
+        filas.forEach(fila => {
+            const texto = fila.textContent.toLowerCase();
+            fila.style.display = texto.includes(filtro) ? '' : 'none';
+        });
+    }
+
+    function filtrarProductos() {
+        const filtro = document.getElementById('buscar-producto').value.toLowerCase();
+        const filas = document.querySelectorAll('#contenido-productos tbody tr');
+
+        filas.forEach(fila => {
+            const texto = fila.textContent.toLowerCase();
+                fila.style.display = texto.includes(filtro) ? '' : 'none';
+        });
+    }
+
+    // Cargar categorías en select
+    function cargarCategoriasSelect() {
+        const select = document.getElementById('producto-categoria');
+
+        if (!select) {
+            console.error('No se encontró el elemento select de categorías');
+            return;
+        }
+
+        // Limpiar opciones existentes pero mantener la primera opción
+        select.innerHTML = '<option value="">Seleccionar categoría</option>';
+
+        console.log('Cargando categorías en select. Total categorías:', categorias.length);
+
+        if (categorias.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No hay categorías disponibles';
+            option.disabled = true;
+            select.appendChild(option);
+            return;
+        }
+
+        // Añadir todas las categorías
+        categorias.forEach(categoria => {
+            const option = document.createElement('option');
+            option.value = categoria.id;
+            option.textContent = categoria.nombre;
+            select.appendChild(option);
+        });
+
+        console.log('Select actualizado con', select.options.length - 1, 'categorías');
+    }
+
+    // Modal handlers
+    function abrirModalCategoria(id = null) {
+        editandoCategoria = id;
+        const modal = document.getElementById('modal-categoria');
+        const titulo = document.getElementById('titulo-categoria');
+
+        if (id) {
+            titulo.textContent = 'Editar Categoría';
+            const categoria = categorias.find(c => c.id === id);
+
+            if (categoria) {
+                document.getElementById('categoria-id').value = categoria.id;
+                document.getElementById('categoria-nombre').value = categoria.nombre || '';
+                document.getElementById('categoria-descripcion').value = categoria.descripcion || '';
+            } else {
+                mostrarAlerta('Error: No se encontró la categoría', 'error');
+                return;
+            }
+        } else {
+            titulo.textContent = 'Nueva Categoría';
+            document.getElementById('form-categoria').reset();
+            document.getElementById('categoria-id').value = '';
+        }
+
+        modal.classList.add('show');
+    }
+
+    function abrirModalProducto(id = null) {
+        editandoProducto = id;
+        const modal = document.getElementById('modal-producto');
+        const titulo = document.getElementById('titulo-producto');
+
+        console.log('Abriendo modal producto, ID:', id);
+
+        // Cargar categorías en el select
+        cargarCategoriasSelect();
+
+        if (id) {
+            titulo.textContent = 'Editar Producto';
+            const producto = productos.find(p => p.id === id);
+
+            if (producto) {
+                document.getElementById('producto-id').value = producto.id;
+                document.getElementById('producto-nombre').value = producto.nombre || '';
+                document.getElementById('producto-descripcion').value = producto.descripcion || '';
+                document.getElementById('producto-imagen').value = producto.imagen || '';
+
+                // Establecer la categoría
+                setTimeout(() => {
+                    const selectCategoria = document.getElementById('producto-categoria');
+                    selectCategoria.value = producto.categoria_id || '';
+                }, 100);
+
+                // Mostrar vista previa si hay imagen
+                if (producto.imagen) {
+                    const preview = document.getElementById('imagen-preview');
+                    const img = document.getElementById('preview-img');
+                    img.src = producto.imagen;
+                    preview.style.display = 'block';
                 }
 
-                // Insertar todas las variantes nuevas
-                const variantesParaInsertar = variantesNuevas.map(v => ({
-                    producto_id: productoId,
-                    nombre_variante: v.nombre_variante,
-                    precio: v.precio,
-                    imagen: v.imagen,
-                    orden: v.orden,
-                    activo: v.activo
-                }));
+                // Cargar variantes del producto
+                cargarVariantesProducto(id);
+            } else {
+                mostrarAlerta('Error: No se encontró el producto', 'error');
+                return;
+            }
+        } else {
+            titulo.textContent = 'Nuevo Producto';
+            document.getElementById('form-producto').reset();
+            document.getElementById('producto-id').value = '';
+            document.getElementById('producto-categoria').value = '';
+            limpiarImagen();
 
-                console.log('Insertando variantes:', variantesParaInsertar);
+            // Agregar una variante por defecto para productos nuevos
+            document.getElementById('variantes-container').innerHTML = '';
+            agregarVariante();
+        }
 
-                if (supabase) {
-                    const { data, error } = await supabase
-                        .from('producto_variantes')
-                        .insert(variantesParaInsertar)
-                        .select();
+        modal.classList.add('show');
+    }
 
-                    if (error) throw error;
+    function cerrarModal(tipo) {
+        const modal = document.getElementById(`modal-${tipo}`);
+        if (modal) {
+            modal.classList.remove('show');
 
-                    // Add the returned data with auto-generated IDs
-                    variantes.push(...data);
-                } else {
-                    // For local storage, add IDs manually
-                    const variantesConId = variantesParaInsertar.map((v, index) => ({
-                        ...v,
-                        id: Date.now() + index
-                    }));
-                    variantes.push(...variantesConId);
-                }
-
-                console.log('Variantes guardadas correctamente');
-
-            } catch (error) {
-                console.error('Error al guardar variantes:', error);
-                throw error;
+            if (tipo === 'categoria') {
+                editandoCategoria = null;
+            } else if (tipo === 'producto') {
+                editandoProducto = null;
+                limpiarImagen();
+                varianteCounter = 0;
+            } else if (tipo === 'info') {
+                // Remover modal temporal
+                setTimeout(() => modal.remove(), 300);
             }
         }
+    }
 
-        function editarProducto(id) {
-            abrirModalProducto(id);
+    // CRUD Categorías
+    async function guardarCategoria(event) {
+        event.preventDefault();
+
+        const datos = {
+            nombre: document.getElementById('categoria-nombre').value,
+            descripcion: document.getElementById('categoria-descripcion').value || null
+        };
+
+        // Only add ID for local storage
+        const supabase = createSupabaseClient();
+        if (!supabase) {
+            datos.id = editandoCategoria || Date.now();
         }
 
-        async function eliminarProducto(id, nombre) {
-            if (!confirm(`¿Estás seguro de que quieres eliminar el producto "${nombre}" y todas sus variantes?`)) {
+        try {
+            if (editandoCategoria) {
+                // Actualizar categoría existente
+                if (supabase) {
+                    const { error } = await supabase
+                        .from('categorias')
+                        .update(datos)
+                        .eq('id', editandoCategoria);
+
+                    if (error) throw error;
+                }
+
+                // Actualizar localmente
+                const index = categorias.findIndex(c => c.id === editandoCategoria);
+                if (index !== -1) {
+                    categorias[index] = { ...categorias[index], ...datos, id: editandoCategoria };
+                }
+
+                mostrarAlerta('Categoría actualizada correctamente', 'success');
+            } else {
+                // Crear nueva categoría
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('categorias')
+                        .insert([datos])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    datos.id = data.id; // Usar ID generado por la DB
+                } else {
+                    // For local storage, use timestamp
+                    datos.id = Date.now();
+                }
+
+                // Agregar localmente
+                categorias.push(datos);
+
+                mostrarAlerta('Categoría creada correctamente', 'success');
+            }
+
+            // Guardar en localStorage como respaldo
+            localStorage.setItem('categorias', JSON.stringify(categorias));
+
+            cerrarModal('categoria');
+            await cargarCategorias();
+            mostrarCategorias();
+            cargarCategoriasSelect();
+
+        } catch (error) {
+            console.error('Error al guardar categoría:', error);
+            mostrarAlerta('Error al guardar la categoría: ' + error.message, 'error');
+        }
+    }
+
+    function editarCategoria(id) {
+        abrirModalCategoria(id);
+    }
+
+    async function eliminarCategoria(id, nombre) {
+        if (!confirm(`¿Estás seguro de que quieres eliminar la categoría "${nombre}"?`)) {
+            return;
+        }
+
+        try {
+            // Verificar si hay productos asociados
+            const productosAsociados = productos.filter(p => p.categoria_id === id);
+            if (productosAsociados.length > 0) {
+                mostrarAlerta(`No se puede eliminar la categoría "${nombre}" porque tiene ${productosAsociados.length} producto(s) asociado(s)`, 'error');
                 return;
             }
 
-            try {
-                // Eliminar de la base de datos
+            const supabase = createSupabaseClient();
+            if (supabase) {
+                const { error } = await supabase
+                    .from('categorias')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+            }
+
+            // Eliminar localmente
+            categorias = categorias.filter(c => c.id !== id);
+            localStorage.setItem('categorias', JSON.stringify(categorias));
+
+            mostrarAlerta('Categoría eliminada correctamente', 'success');
+            await cargarCategorias();
+            mostrarCategorias();
+            cargarCategoriasSelect();
+
+        } catch (error) {
+            console.error('Error al eliminar categoría:', error);
+            mostrarAlerta('Error al eliminar la categoría: ' + error.message, 'error');
+        }
+    }
+
+    // CRUD Productos con Variantes
+    async function guardarProducto(event) {
+        event.preventDefault();
+
+        try {
+            let imagenUrl = document.getElementById('producto-imagen').value || null;
+
+            // Verificar si hay un archivo seleccionado para subir
+            const fileInput = document.getElementById('producto-imagen-file');
+            if (fileInput.files && fileInput.files[0]) {
+                mostrarAlerta('Subiendo imagen...', 'info');
+                imagenUrl = await subirImagen(fileInput.files[0]);
+            }
+
+            // Obtener variantes del formulario ANTES de crear el producto
+            const variantesFormulario = obtenerVariantesFormulario();
+            console.log('Variantes del formulario:', variantesFormulario);
+
+            // Calcular precio base del producto (precio mínimo de las variantes)
+            let precioBase = 0;
+            if (variantesFormulario.length > 0) {
+                const precios = variantesFormulario.map(v => parseFloat(v.precio));
+                precioBase = Math.min(...precios);
+            }
+
+            // Obtener datos del producto
+            const categoriaSeleccionada = document.getElementById('producto-categoria').value;
+            const datosProducto = {
+                nombre: document.getElementById('producto-nombre').value,
+                categoria_id: categoriaSeleccionada ? parseInt(categoriaSeleccionada) : null,
+                descripcion: document.getElementById('producto-descripcion').value || null,
+                imagen: imagenUrl,
+                precio: precioBase
+            };
+
+            const supabase = createSupabaseClient();
+            // Only add ID for local storage, let Supabase auto-generate
+            if (!supabase) {
+                datosProducto.id = editandoProducto || Date.now();
+            }
+
+            console.log('Datos del producto a guardar:', datosProducto);
+
+            let productoId;
+
+            if (editandoProducto) {
+                // Actualizar producto existente
                 if (supabase) {
                     const { error } = await supabase
                         .from('productos')
-                        .delete()
-                        .eq('id', id);
+                        .update(datosProducto)
+                        .eq('id', editandoProducto);
 
                     if (error) throw error;
                 }
 
-                // Eliminar localmente
-                productos = productos.filter(p => p.id !== id);
-                variantes = variantes.filter(v => v.producto_id !== id);
-
-                // Guardar en localStorage
-                localStorage.setItem('productos', JSON.stringify(productos));
-                localStorage.setItem('variantes', JSON.stringify(variantes));
-
-                mostrarAlerta('Producto y variantes eliminados correctamente', 'success');
-                await cargarDatos();
-                mostrarProductos();
-
-            } catch (error) {
-                console.error('Error al eliminar producto:', error);
-                mostrarAlerta('Error al eliminar el producto: ' + error.message, 'error');
-            }
-        }
-
-
-        // Función para exportar datos
-        function exportarDatos() {
-            const datos = {
-                categorias: categorias,
-                productos: productos,
-                variantes: variantes,
-                exportado: new Date().toISOString()
-            };
-
-            const dataStr = JSON.stringify(datos, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
-            const exportFileDefaultName = `heladeria_backup_${new Date().toISOString().split('T')[0]}.json`;
-
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-
-            mostrarAlerta('Datos exportados correctamente', 'success');
-        }
-
-        // Función para importar datos
-        function importarDatos(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const datos = JSON.parse(e.target.result);
-
-                    if (datos.categorias && datos.productos && datos.variantes) {
-                        categorias = datos.categorias;
-                        productos = datos.productos;
-                        variantes = datos.variantes;
-
-                        // Guardar en localStorage
-                        localStorage.setItem('categorias', JSON.stringify(categorias));
-                        localStorage.setItem('productos', JSON.stringify(productos));
-                        localStorage.setItem('variantes', JSON.stringify(variantes));
-
-                        mostrarDatos();
-                        cargarCategoriasSelect();
-                        mostrarAlerta('Datos importados correctamente', 'success');
-                    } else {
-                        mostrarAlerta('Archivo inválido. Debe contener categorías, productos y variantes.', 'error');
-                    }
-                } catch (error) {
-                    mostrarAlerta('Error al leer el archivo. Asegúrate de que sea un JSON válido.', 'error');
+                // Actualizar localmente
+                const index = productos.findIndex(p => p.id === editandoProducto);
+                if (index !== -1) {
+                    productos[index] = { ...productos[index], ...datosProducto };
                 }
-            };
-            reader.readAsText(file);
+
+                productoId = editandoProducto;
+                console.log('Producto actualizado correctamente');
+            } else {
+                // Crear nuevo producto
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('productos')
+                        .insert([datosProducto])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    productoId = data.id;
+                    datosProducto.id = productoId;
+                } else {
+                    // For local storage, use timestamp
+                    datosProducto.id = Date.now();
+                    productoId = datosProducto.id;
+                }
+
+                productos.push(datosProducto);
+                console.log('Producto creado correctamente, ID:', productoId);
+            }
+
+            // Guardar variantes
+            if (variantesFormulario.length > 0) {
+                await guardarVariantesProducto(productoId, variantesFormulario);
+            }
+
+            // Guardar en localStorage como respaldo
+            localStorage.setItem('productos', JSON.stringify(productos));
+            localStorage.setItem('variantes', JSON.stringify(variantes));
+
+            mostrarAlerta('Producto y variantes guardados correctamente', 'success');
+            cerrarModal('producto');
+
+            // Recargar datos
+            await cargarDatos();
+            mostrarProductos();
+
+        } catch (error) {
+            console.error('Error al guardar producto:', error);
+            mostrarAlerta('Error al guardar el producto: ' + error.message, 'error');
         }
+    }
 
-        // Inicialización cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM cargado, inicializando aplicación...');
+    function obtenerVariantesFormulario() {
+        const variantesArray = [];
+        const variantesItems = document.querySelectorAll('.variante-item');
 
-            // Intentar inicializar Supabase
-            if (!initializeSupabase()) {
-                console.warn('Supabase no disponible, funcionando en modo local');
-                mostrarAlerta('Funcionando en modo local. Los datos se guardarán en el navegador.', 'info');
-            }
+        variantesItems.forEach((item, index) => {
+            const nombre = item.querySelector('.variante-nombre').value.trim();
+            const precio = item.querySelector('.variante-precio').value;
+            const imagen = item.querySelector('.variante-imagen').value.trim();
+            const varianteId = item.getAttribute('data-variante-id');
 
-            // Búsqueda en tiempo real para categorías
-            const buscarCategoria = document.getElementById('buscar-categoria');
-            if (buscarCategoria) {
-                buscarCategoria.addEventListener('input', filtrarCategorias);
-            }
+            if (nombre && precio) {
+                const variante = {
+                    nombre_variante: nombre,
+                    precio: parseFloat(precio),
+                    imagen: imagen || null,
+                    orden: index + 1,
+                    activo: true
+                };
 
-            // Búsqueda en tiempo real para productos
-            const buscarProducto = document.getElementById('buscar-producto');
-            if (buscarProducto) {
-                buscarProducto.addEventListener('input', filtrarProductos);
-            }
-
-            // Cerrar modales al presionar ESC
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') {
-                    const modalesAbiertos = document.querySelectorAll('.modal.show');
-                    modalesAbiertos.forEach(modal => {
-                        const modalId = modal.id.replace('modal-', '');
-                        cerrarModal(modalId);
-                    });
+                // Only add ID for existing variants or when not using Supabase
+                if (varianteId) {
+                    variante.id = parseInt(varianteId);
+                } else if (!createSupabaseClient()) {
+                    variante.id = Date.now() + index;
                 }
-            });
 
-            // Cerrar modales al hacer clic fuera
-            document.addEventListener('click', function (event) {
-                if (event.target.classList.contains('modal')) {
-                    const modalId = event.target.id.replace('modal-', '');
-                    cerrarModal(modalId);
-                }
-            });
-
-            // Cargar datos iniciales
-            setTimeout(() => {
-                cargarDatos().then(() => {
-                    // Si no hay datos, inicializar ejemplos
-                    if (categorias.length === 0 && productos.length === 0) {
-
-                        mostrarDatos();
-                    }
-                });
-            }, 100);
+                variantesArray.push(variante);
+            }
         });
 
-        // Agregar funciones de utilidad al objeto window para facilitar el debugging
-        window.adminHelados = {
-            exportarDatos,
-            importarDatos,
-            categorias: () => categorias,
-            productos: () => productos,
-            variantes: () => variantes,
-            recargar: cargarDatos,
-            supabase: () => supabase
+        return variantesArray;
+    }
+
+    async function guardarVariantesProducto(productoId, variantesNuevas) {
+        try {
+            console.log('Guardando variantes para producto ID:', productoId);
+            const supabase = createSupabaseClient();
+
+            if (editandoProducto) {
+                // Para productos existentes, eliminar variantes existentes
+                if (supabase) {
+                    const { error: deleteError } = await supabase
+                        .from('producto_variantes')
+                        .delete()
+                        .eq('producto_id', productoId);
+
+                    if (deleteError) {
+                        console.warn('Error al eliminar variantes existentes:', deleteError);
+                    }
+                }
+
+                // Eliminar localmente también
+                variantes = variantes.filter(v => v.producto_id !== productoId);
+            }
+
+            // Insertar todas las variantes nuevas
+            const variantesParaInsertar = variantesNuevas.map(v => ({
+                producto_id: productoId,
+                nombre_variante: v.nombre_variante,
+                precio: v.precio,
+                imagen: v.imagen,
+                orden: v.orden,
+                activo: v.activo
+            }));
+
+            console.log('Insertando variantes:', variantesParaInsertar);
+
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('producto_variantes')
+                    .insert(variantesParaInsertar)
+                    .select();
+
+                if (error) throw error;
+
+                // Add the returned data with auto-generated IDs
+                variantes.push(...data);
+            } else {
+                // For local storage, add IDs manually
+                const variantesConId = variantesParaInsertar.map((v, index) => ({
+                    ...v,
+                    id: Date.now() + index
+                }));
+                variantes.push(...variantesConId);
+            }
+
+            console.log('Variantes guardadas correctamente');
+
+        } catch (error) {
+            console.error('Error al guardar variantes:', error);
+            throw error;
+        }
+    }
+
+    function editarProducto(id) {
+        abrirModalProducto(id);
+    }
+
+    async function eliminarProducto(id, nombre) {
+        if (!confirm(`¿Estás seguro de que quieres eliminar el producto "${nombre}" y todas sus variantes?`)) {
+            return;
+        }
+
+        try {
+            const supabase = createSupabaseClient();
+            // Eliminar de la base de datos
+            if (supabase) {
+                const { error } = await supabase
+                    .from('productos')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+            }
+
+            // Eliminar localmente
+            productos = productos.filter(p => p.id !== id);
+            variantes = variantes.filter(v => v.producto_id !== id);
+
+            // Guardar en localStorage
+            localStorage.setItem('productos', JSON.stringify(productos));
+            localStorage.setItem('variantes', JSON.stringify(variantes));
+
+            mostrarAlerta('Producto y variantes eliminados correctamente', 'success');
+            await cargarDatos();
+            mostrarProductos();
+
+        } catch (error) {
+            console.error('Error al eliminar producto:', error);
+            mostrarAlerta('Error al eliminar el producto: ' + error.message, 'error');
+        }
+    }
+
+    // Función para exportar datos
+    function exportarDatos() {
+        const datos = {
+            categorias: categorias,
+            productos: productos,
+            variantes: variantes,
+            exportado: new Date().toISOString()
         };
 
-    </script>
+        const dataStr = JSON.stringify(datos, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `heladeria_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+
+        mostrarAlerta('Datos exportados correctamente', 'success');
+    }
+
+    // Función para importar datos
+    function importarDatos(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const datos = JSON.parse(e.target.result);
+
+                if (datos.categorias && datos.productos && datos.variantes) {
+                    categorias = datos.categorias;
+                    productos = datos.productos;
+                    variantes = datos.variantes;
+
+                    // Guardar en localStorage
+                    localStorage.setItem('categorias', JSON.stringify(categorias));
+                    localStorage.setItem('productos', JSON.stringify(productos));
+                    localStorage.setItem('variantes', JSON.stringify(variantes));
+
+                    mostrarDatos();
+                    cargarCategoriasSelect();
+                    mostrarAlerta('Datos importados correctamente', 'success');
+                } else {
+                    mostrarAlerta('Archivo inválido. Debe contener categorías, productos y variantes.', 'error');
+                }
+            } catch (error) {
+                mostrarAlerta('Error al leer el archivo. Asegúrate de que sea un JSON válido.', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // Inicialización cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM cargado, inicializando aplicación...');
+
+        // Verificar si Supabase está disponible
+        if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+            console.warn('Supabase no disponible, funcionando en modo local');
+            mostrarAlerta('Funcionando en modo local. Los datos se guardarán en el navegador.', 'info');
+        }
+
+        // Búsqueda en tiempo real para categorías
+        const buscarCategoria = document.getElementById('buscar-categoria');
+        if (buscarCategoria) {
+            buscarCategoria.addEventListener('input', filtrarCategorias);
+        }
+
+        // Búsqueda en tiempo real para productos
+        const buscarProducto = document.getElementById('buscar-producto');
+        if (buscarProducto) {
+            buscarProducto.addEventListener('input', filtrarProductos);
+        }
+
+        // Cerrar modales al presionar ESC
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const modalesAbiertos = document.querySelectorAll('.modal.show');
+                modalesAbiertos.forEach(modal => {
+                    const modalId = modal.id.replace('modal-', '');
+                    cerrarModal(modalId);
+                });
+            }
+        });
+
+        // Cerrar modales al hacer clic fuera
+        document.addEventListener('click', function (event) {
+            if (event.target.classList.contains('modal')) {
+                const modalId = event.target.id.replace('modal-', '');
+                cerrarModal(modalId);
+            }
+        });
+
+        // Cargar datos iniciales
+        setTimeout(() => {
+            cargarDatos().then(() => {
+                // Si no hay datos, inicializar ejemplos
+                if (categorias.length === 0 && productos.length === 0) {
+                    mostrarDatos();
+                }
+            });
+        }, 100);
+    });
+
+    // Agregar funciones de utilidad al objeto window para facilitar el debugging
+    window.adminHelados = {
+        exportarDatos,
+        importarDatos,
+        categorias: () => categorias,
+        productos: () => productos,
+        variantes: () => variantes,
+        recargar: cargarDatos,
+        createSupabaseClient
+    };
+
+</script>
 </body>
+
 
 </html>
